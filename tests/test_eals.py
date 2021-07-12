@@ -1,3 +1,4 @@
+import pytest
 import numpy as np
 import scipy.sparse as sps
 
@@ -177,3 +178,17 @@ def test_calc_loss_lil():
     l_user1 = Wi * (U0[1] @ V0[0]) ** 2  # missing data term
     loss_expected = l_reg + l_user0 + l_user1
     assert np.allclose(model.calc_loss(), loss_expected)
+
+
+@pytest.mark.parametrize("u,i", [(0, 0), (0, 1), (0, 2), (1, 0), (1, 1), (1, 2)])
+def test_update_loss_and_calc_loss_give_same_value(u, i):
+    # 2 users, 3 items
+    user_items = sps.csc_matrix([[1.0, 2.5, 0.0], [0.0, 0.4, 0.0]])
+    model = ElementwiseAlternatingLeastSquares()
+    model.init_data(user_items)
+    model._convert_data_for_online_training()
+    model.update_model(u, i)
+
+    loss_actual = model.calc_loss(use_cache=True)  # call model._loss._update_loss() internally
+    loss_expected = model.calc_loss(use_cache=False)  # call model._loss._calc_loss() internally
+    assert np.allclose(loss_actual, loss_expected)

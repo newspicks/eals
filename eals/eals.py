@@ -64,7 +64,8 @@ class ElementwiseAlternatingLeastSquares:
         self.random_state = random_state
         self.show_loss = show_loss
 
-        self._training_mode = "batch"  # "batch" (use csr/csc matrix) or "online" (use lil matrix)
+        self.training_mode = "batch"  # "batch" (use csr/csc matrix) or "online" (use lil matrix)
+        self._loss = EalsLoss(self)
 
     def fit(
         self,
@@ -146,11 +147,11 @@ class ElementwiseAlternatingLeastSquares:
         self.SU = self.U.T @ self.U
         self.SV = (self.V.T * self.Wi) @ self.V
 
-        self._training_mode = "batch"
+        self.training_mode = "batch"
 
     def _convert_data_for_online_training(self):
         # update_model()等のためにlil_matrixに変換
-        if self._training_mode != "online":
+        if self.training_mode != "online":
             self.user_items_lil = self.user_items.tolil()
             self.user_items_lil_t = self.user_items_lil.T
             self.W_lil = self.W.tolil()
@@ -159,11 +160,11 @@ class ElementwiseAlternatingLeastSquares:
             del self.user_items_csc
             del self.W
             del self.W_csc
-            self._training_mode = "online"
+            self.training_mode = "online"
 
     def _convert_data_for_batch_training(self):
         # update_user_and_SU_all()等のためにcsr/csc matrixに変換
-        if self._training_mode != "batch":
+        if self.training_mode != "batch":
             self.user_items = self.user_items_lil.tocsr()
             self.user_items_csc = self.user_items.tocsc()
             self.W = self.W_lil.tocsr()
@@ -172,7 +173,7 @@ class ElementwiseAlternatingLeastSquares:
             del self.user_items_lil_t
             del self.W_lil
             del self.W_lil_t
-            self._training_mode = "batch"
+            self.training_mode = "batch"
 
     def user_factors(self):
         return self.U
@@ -262,17 +263,16 @@ class ElementwiseAlternatingLeastSquares:
         """データを1件追加してモデルを更新"""
         timer = Timer()
         self._convert_data_for_online_training()
-        # TODO: 新規ユーザ、新規アイテムに対応できていないのでは？（IndexErrorになるだけ）
-        # あらかじめ将来追加されるのユーザ、アイテムの分まで行列確保しておくのであればこれでもよいが…
+        # TODO: uncomment this after debugging EalsLoss
+        # self._loss.add_update_log(u, i, self.user_items_lil[u, i], self.W_lil[u, i], self.Wi[i], self.U[u], self.V[i])
+
         self.user_items_lil[u, i] = 1
         self.user_items_lil_t[i, u] = 1
-        # TODO: 論文だとw_newはハイパーパラメータ
-        self.W_lil[u, i] = 1  # w_new
-        self.W_lil_t[i, u] = 1  # w_new
+        self.W_lil[u, i] = 1  # w_new, ここでは1固定だが論文だとw_newはハイパーパラメータ
+        self.W_lil_t[i, u] = 1  # 同上
         if self.Wi[i] == 0:
-            # an new item
-            # TODO: この定義はどこから来た？（論文には書いてないような）
-            # 定義の気持ちはわからないでもないが、Wi.sum()がw0にならないのもイヤ
+            # a new item
+            # この定義はどこから来た？（論文には書いてない）
             self.Wi[i] = self.w0 / self.item_count
             for f in range(self.factors):
                 for k in range(f + 1):
@@ -287,43 +287,16 @@ class ElementwiseAlternatingLeastSquares:
             self.update_SV(i, old_item_vec)
 
         if self.show_loss:
+            # TODO: uncomment this after debugging EalsLoss
+            # self.print_loss(1, "update_model", timer.elapsed(), use_cache=True)
             self.print_loss(1, "update_model", timer.elapsed())
 
-    def print_loss(self, iter, message, elapsed):
-        loss = self.calc_loss()
+    def print_loss(self, iter, message, elapsed, use_cache=False):
+        loss = self.calc_loss(use_cache)
         print(f"iter={iter} {message} loss={loss:.4f} ({elapsed:.4f} sec)")
 
-    def calc_loss(self):
-        if self._training_mode == "batch":
-            loss = _calc_loss_csr(
-                self.user_items.indptr,
-                self.user_items.indices,
-                self.user_items.data,
-                self.U,
-                self.V,
-                self.SV,
-                self.W.indptr,
-                self.W.data,
-                self.Wi,
-                self.user_count,
-                self.reg,
-            )
-        elif self._training_mode == "online":
-            loss = _calc_loss_lil(
-                self.user_items_lil_t.rows,
-                self.user_items_lil_t.data,
-                self.U,
-                self.V,
-                self.SV,
-                self.W_lil_t.data,
-                self.Wi,
-                self.user_count,
-                self.item_count,
-                self.reg,
-            )
-        else:
-            raise NotImplementedError(f"calc_loss() for self._training_mode='{self._training_mode}' is not defined")
-        return loss
+    def calc_loss(self, use_cache=False):
+        return self._loss(use_cache)
 
 
 # @njit("(i8,i4[:],f4[:],f8[:,:],f8[:,:],f8[:,:],f4[:],f8[:],i8,f8)")
@@ -476,3 +449,126 @@ def _calc_loss_lil(cols, data, U, V, SV, w_t_data, Wi, user_count, item_count, r
         weights = np.array(w_t_data[i], dtype=np.float32)
         loss += _calc_loss_lil_inner_loop(i, user_indices, ratings, weights, U, V, Wi)
     return loss
+
+
+class EalsLoss:
+    def __init__(self, model: ElementwiseAlternatingLeastSquares):
+        self.model = model
+
+        self._loss = None
+        self._rating_log = dict()
+        self._W_log = dict()
+        self._Wi_log = dict()
+        self._user_vec_log = dict()
+        self._item_vec_log = dict()
+
+    def __call__(self, use_cache: bool = False):
+        if self._update_log_is_empty() or not use_cache:
+            # print("self._calc_loss() called")
+            loss = self._calc_loss()
+        else:
+            # print("self._update_loss() called")
+            loss = self._update_loss()
+        self.reset_update_log()
+        return loss
+
+    def add_update_log(self, u: int, i: int, old_rating: float, old_W: float, old_Wi: float, old_user_vec: np.ndarray, old_item_vec: np.ndarray):
+        """Keep the oldest rating, Wi, and latent vectors for each updated user and item since previous loss calculation"""
+        if not self._rating_log.get((u, i)):
+            self._rating_log[(u, i)] = old_rating
+        if not self._W_log.get((u, i)):
+            self._W_log[(u, i)] = old_W
+        if not self._Wi_log.get(i):
+            self._Wi_log[i] = old_Wi
+        if not self._user_vec_log.get(u):
+            self._user_vec_log[u] = old_user_vec
+        if not self._item_vec_log.get(i):
+            self._item_vec_log[i] = old_item_vec
+
+    def reset_update_log(self):
+        self._rating_log = dict()
+        self._W_log = dict()
+        self._Wi_log = dict()
+        self._user_vec_log = dict()
+        self._item_vec_log = dict()
+
+    def _update_log_is_empty(self):
+        return not self._rating_log
+
+    def _calc_loss(self):
+        """calculate the loss from scratch"""
+        if self.model.training_mode == "batch":
+            loss = _calc_loss_csr(
+                self.model.user_items.indptr,
+                self.model.user_items.indices,
+                self.model.user_items.data,
+                self.model.U,
+                self.model.V,
+                self.model.SV,
+                self.model.W.indptr,
+                self.model.W.data,
+                self.model.Wi,
+                self.model.user_count,
+                self.model.reg,
+            )
+        elif self.model.training_mode == "online":
+            loss = _calc_loss_lil(
+                self.model.user_items_lil_t.rows,
+                self.model.user_items_lil_t.data,
+                self.model.U,
+                self.model.V,
+                self.model.SV,
+                self.model.W_lil_t.data,
+                self.model.Wi,
+                self.model.user_count,
+                self.model.item_count,
+                self.model.reg,
+            )
+        else:
+            raise NotImplementedError(f"self.calc_loss() for self.model.training_mode='{self.training_mode}' is not defined")
+        self._loss = loss
+        return loss
+
+    # TODO: Debug
+    def _update_loss(self):
+        """efficiently calculate the loss by incremental update"""
+        loss = self._loss if self._loss else 0
+        # loss update for all updated (user, item) pairs
+        for (u, i), old_rating in self._rating_log.items():
+            new_rating = self.model.user_items_lil[u, i]
+            old_pred = self._user_vec_log[u] @ self._item_vec_log[i]
+            new_pred = self.model.U[u] @ self.model.V[i]
+            # usual loss term
+            loss -= self._W_log[(u, i)] * (old_rating - old_pred) ** 2
+            loss += self.model.W_lil[u, i] * (new_rating - new_pred) ** 2
+            # missing item term
+            if old_rating == 0:
+                loss -= self._Wi_log[i] * old_pred ** 2
+            # regularization term
+            loss -= self.model.reg * ((self._user_vec_log[u] ** 2).sum() + (self._item_vec_log[i] ** 2).sum())
+            loss += self.model.reg * ((self.model.U[u] ** 2).sum() + (self.model.V[i] ** 2).sum())
+        # loss update for all (updated user, non-updated item) pairs
+        for u in self._user_vec_log:
+            for i in range(self.model.item_count):
+                if i not in self._item_vec_log:
+                    old_pred = self._user_vec_log[u] @ self.model.V[i]
+                    new_pred = self.model.U[u] @ self.model.V[i]
+                    # usual loss term
+                    loss += 2 * self.model.W_lil[u, i] * self.model.user_items_lil[u, i] * (old_pred - new_pred) + new_pred ** 2 - old_pred ** 2
+                    # missing item term
+                    if self.model.user_items_lil[u, i] == 0:
+                        loss += self.model.Wi[i] * (new_pred ** 2 - old_pred ** 2)
+        # loss update for all (non-updated user, updated item) pairs
+        for i in self._item_vec_log:
+            for u in range(self.model.user_count):
+                if u not in self._user_vec_log:
+                    old_pred = self.model.U[u] @ self._item_vec_log[i]
+                    new_pred = self.model.U[u] @ self.model.V[i]
+                    # usual loss term
+                    loss += 2 * self.model.W_lil[u, i] * self.model.user_items_lil[u, i] * (old_pred - new_pred) + new_pred ** 2 - old_pred ** 2
+                    # missing item term
+                    if self.model.user_items_lil[u, i] == 0:
+                        loss += self.model.Wi[i] * (new_pred ** 2 - old_pred ** 2)
+        self._loss = loss
+        self.reset_update_log()
+        return loss
