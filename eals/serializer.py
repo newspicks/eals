@@ -8,7 +8,7 @@ from .eals import ElementwiseAlternatingLeastSquares
 
 
 def serialize_json(file: str, model: ElementwiseAlternatingLeastSquares, compress: bool = True):
-    if model._training_mode == "online":
+    if model._training_mode == "online":  # TODO: private attribute参照したくないよ
         model_dict = _serialize_json_lil(model)
     if model._training_mode == "batch":
         model_dict = _serialize_json_csr(model)
@@ -98,6 +98,7 @@ def _deserialize_json_lil(model_dict: dict) -> ElementwiseAlternatingLeastSquare
         user_items_data = user_items_dict["data"]
         user_items_rows = user_items_dict["row"]
         user_items_cols = user_items_dict["col"]
+        # TODO: 行列のshapeも保存しておくべき？
         user_count = max(user_items_rows)
         item_count = max(user_items_cols)
         user_items = sps.csr_matrix(
