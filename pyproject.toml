@@ -1,0 +1,55 @@
+[tool.poetry]
+name = "eals"
+version = "0.1.0"
+description = "eALS"
+authors = ["Akira Kitauchi <kitauchi@gmail.com>"]
+
+[tool.poetry.dependencies]
+python = ">=3.9,<3.10"
+click = "^7.1.2"
+numpy = "^1.20.3"
+scipy = "^1.6"
+numba = "^0.53.1"
+
+[tool.poetry.dev-dependencies]
+pytest = "^6.2.3"
+black = "^21.4b0"
+autoflake = "^1.4"
+isort = "^5.6.4"
+pylint = "^2.6.0"
+flake8 = "^3.8.4"
+mypy = "^0.812"
+ipython = "^7.25.0"
+ipykernel = "^6.0.1"
+
+[tool.isort]
+line_length = 99
+multi_line_output = 0
+atomic = true
+
+[tool.black]
+line-length = 99
+include = '\.pyi?$'
+exclude = '''
+
+(
+  /(
+      \.eggs         # exclude a few common directories in the
+    | \.git          # root of the project
+    | \.hg
+    | \.mypy_cache
+    | \.tox
+    | \.venv
+    | _build
+    | buck-out
+    | build
+    | dist
+  )/
+  | foo.py           # also separately exclude a file named foo.py in
+                     # the root of the project
+)
+'''
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
