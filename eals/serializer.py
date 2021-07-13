@@ -74,17 +74,17 @@ def _serialize_json_lil(model: ElementwiseAlternatingLeastSquares) -> dict:
 
 def _deserialize_json_lil(model_dict: dict) -> ElementwiseAlternatingLeastSquares:
     # model initializer arguments
-    factors = (model_dict.get("factors") or 64)
-    w0 = (model_dict.get("w0") or 10)
-    alpha = (model_dict.get("alpha") or 0.75)
-    reg = (model_dict.get("reg") or 0.01)
-    init_mean = (model_dict.get("init_mean") or 0)
-    init_stdev = (model_dict.get("init_stdev") or 0.01)
+    factors = model_dict.get("factors") or 64
+    w0 = model_dict.get("w0") or 10
+    alpha = model_dict.get("alpha") or 0.75
+    reg = model_dict.get("reg") or 0.01
+    init_mean = model_dict.get("init_mean") or 0
+    init_stdev = model_dict.get("init_stdev") or 0.01
     # dtype = (model_dict.get("dtype") or np.float32,)
-    max_iter = (model_dict.get("max_iter") or 500)
-    max_iter_online = (model_dict.get("max_iter_online") or 1)
-    random_state = (model_dict.get("random_state") or None)
-    show_loss = (model_dict.get("show_loss") or False)
+    max_iter = model_dict.get("max_iter") or 500
+    max_iter_online = model_dict.get("max_iter_online") or 1
+    random_state = model_dict.get("random_state") or None
+    show_loss = model_dict.get("show_loss") or False
     # model parameters
     U = np.array(model_dict.get("U")) if model_dict.get("U") else None
     V = np.array(model_dict.get("V")) if model_dict.get("V") else None
@@ -98,8 +98,7 @@ def _deserialize_json_lil(model_dict: dict) -> ElementwiseAlternatingLeastSquare
         user_items_shape = user_items_dict["shape"]
         # TODO: 行列のshapeも保存しておくべき？
         user_items = sps.csr_matrix(
-            (user_items_data, (user_items_rows, user_items_cols)),
-            shape=user_items_shape
+            (user_items_data, (user_items_rows, user_items_cols)), shape=user_items_shape
         )
     else:
         user_items = sps.csr_matrix(([], ([], [])), shape=(0, 0))
