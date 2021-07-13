@@ -8,11 +8,7 @@ from .eals import ElementwiseAlternatingLeastSquares
 
 
 def serialize_json(file: str, model: ElementwiseAlternatingLeastSquares, compress: bool = True):
-    if model._training_mode == "online":  # TODO: private attribute参照したくないよ
-        model_dict = _serialize_json_lil(model)
-    if model._training_mode == "batch":
-        model_dict = _serialize_json_csr(model)
-
+    model_dict = _serialize_json_lil(model)
     if compress:
         with gzip.open(file, "wb") as g:
             g.write(json.dumps(model_dict).encode("utf-8"))
@@ -29,16 +25,8 @@ def deserialize_json(file: str) -> ElementwiseAlternatingLeastSquares:
     else:
         with open(file, "w") as f:
             model_dict = json.load(f)
-
-    if model_dict["mode"] == "csr":
-        model = _deserialize_json_csr(model_dict)
-    if model_dict["mode"] == "lil":
-        model = _deserialize_json_lil(model_dict)
+    model = _deserialize_json_lil(model_dict)
     return model
-
-
-def _serialize_json_csr(model: ElementwiseAlternatingLeastSquares) -> dict:
-    raise NotImplementedError
 
 
 def _serialize_json_lil(model: ElementwiseAlternatingLeastSquares) -> dict:
@@ -69,10 +57,6 @@ def _serialize_json_lil(model: ElementwiseAlternatingLeastSquares) -> dict:
     #   W: 現状では1固定なのでまあ無視でOK
     #   Wi: deserialize時にinit_data()で計算されるが、モデル保存時の値とは一致しない可能性あり（init_data()とupdate_model()が整合的でないので）
     return model_dict
-
-
-def _deserialize_json_csr(model_dict: dict) -> ElementwiseAlternatingLeastSquares:
-    raise NotImplementedError
 
 
 def _deserialize_json_lil(model_dict: dict) -> ElementwiseAlternatingLeastSquares:
