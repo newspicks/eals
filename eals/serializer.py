@@ -35,7 +35,7 @@ def deserialize_json(file: str) -> ElementwiseAlternatingLeastSquares:
         with gzip.open(file, "rb") as g:
             model_dict = json.loads(g.read())
     else:
-        with open(file, "w") as f:
+        with open(file, "r") as f:
             model_dict = json.load(f)
     model = _deserialize_json_lil(model_dict)
     return model
@@ -44,9 +44,7 @@ def deserialize_json(file: str) -> ElementwiseAlternatingLeastSquares:
 def _serialize_json_lil(model: ElementwiseAlternatingLeastSquares) -> dict:
     model_dict = dict()
     # model initializer arguments
-    print(f"{model.factors=}")
     model_dict["factors"] = model.factors
-    print(f"{model_dict['factors']=}")
     model_dict["w0"] = model.w0
     model_dict["alpha"] = model.alpha
     model_dict["reg"] = model.reg
