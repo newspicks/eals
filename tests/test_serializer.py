@@ -25,7 +25,7 @@ def test_serialize_and_deserialize(tmp_path):
     )
     model.fit(user_items)
 
-    # test with compressiion
+    # test with compression
     file_gzip = (tmp_path / "model.json.gz").as_posix()
     serialize_json(file_gzip, model, compress=True)
     model_actual = deserialize_json(file_gzip)
@@ -45,7 +45,7 @@ def test_serialize_and_deserialize(tmp_path):
     assert (model.user_items_lil.data == model_actual.user_items_lil.data).all()
     assert (model.user_items_lil.rows == model_actual.user_items_lil.rows).all()
 
-    # test without compressiion
+    # test without compression
     file_json = (tmp_path / "model.json").as_posix()
     serialize_json(file_json, model, compress=False)
     model_actual = deserialize_json(file_json)
