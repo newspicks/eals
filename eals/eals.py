@@ -320,7 +320,7 @@ class ElementwiseAlternatingLeastSquares:
         serialize_eals_json(file, self, compress)
 
 
-def load(file: Union[Path, str]) -> ElementwiseAlternatingLeastSquares:
+def load_model(file: Union[Path, str]) -> ElementwiseAlternatingLeastSquares:
     return deserialize_eals_json(file)
 
 

@@ -5,6 +5,24 @@ from eals.eals import ElementwiseAlternatingLeastSquares
 from eals.serializer import serialize_eals_json, deserialize_eals_json
 
 
+def assert_model_equality(model1, model2):
+    assert model1.factors == model2.factors
+    assert model1.w0 == model2.w0
+    assert model1.alpha == model2.alpha
+    assert model1.reg == model2.reg
+    assert model1.init_mean == model2.init_mean
+    assert model1.init_stdev == model2.init_stdev
+    assert model1.dtype == model2.dtype
+    assert model1.max_iter == model2.max_iter
+    assert model1.max_iter_online == model2.max_iter_online
+    assert model1.random_state == model2.random_state
+    assert model1.show_loss == model2.show_loss
+    assert np.allclose(model1.U, model2.U)
+    assert np.allclose(model1.V, model2.V)
+    assert (model1.user_items_lil.data == model2.user_items_lil.data).all()
+    assert (model1.user_items_lil.rows == model2.user_items_lil.rows).all()
+
+
 def test_serialize_and_deserialize(tmp_path):
     # setup: 3 users x 2 items
     user_items = sps.csr_matrix([[1.0, 0.0], [1.0, 1.0], [0.0, 0.0]])
@@ -22,41 +40,15 @@ def test_serialize_and_deserialize(tmp_path):
         show_loss=False,
     )
     model.fit(user_items)
+    
     # test with compression
     file_gzip = (tmp_path / "model.json.gz").as_posix()
     serialize_eals_json(file_gzip, model, compress=True)
     model_actual = deserialize_eals_json(file_gzip)
-    assert model.factors == model_actual.factors
-    assert model.w0 == model_actual.w0
-    assert model.alpha == model_actual.alpha
-    assert model.reg == model_actual.reg
-    assert model.init_mean == model_actual.init_mean
-    assert model.init_stdev == model_actual.init_stdev
-    assert model.dtype == model_actual.dtype
-    assert model.max_iter == model_actual.max_iter
-    assert model.max_iter_online == model_actual.max_iter_online
-    assert model.random_state == model_actual.random_state
-    assert model.show_loss == model_actual.show_loss
-    assert np.allclose(model.U, model_actual.U)
-    assert np.allclose(model.V, model_actual.V)
-    assert (model.user_items_lil.data == model_actual.user_items_lil.data).all()
-    assert (model.user_items_lil.rows == model_actual.user_items_lil.rows).all()
+    assert_model_equality(model, model_actual)
+
     # test without compression
     file_json = (tmp_path / "model.json").as_posix()
     serialize_eals_json(file_json, model, compress=False)
     model_actual = deserialize_eals_json(file_json)
-    assert model.factors == model_actual.factors
-    assert model.w0 == model_actual.w0
-    assert model.alpha == model_actual.alpha
-    assert model.reg == model_actual.reg
-    assert model.init_mean == model_actual.init_mean
-    assert model.init_stdev == model_actual.init_stdev
-    assert model.dtype == model_actual.dtype
-    assert model.max_iter == model_actual.max_iter
-    assert model.max_iter_online == model_actual.max_iter_online
-    assert model.random_state == model_actual.random_state
-    assert model.show_loss == model_actual.show_loss
-    assert np.allclose(model.U, model_actual.U)
-    assert np.allclose(model.V, model_actual.V)
-    assert (model.user_items_lil.data == model_actual.user_items_lil.data).all()
-    assert (model.user_items_lil.rows == model_actual.user_items_lil.rows).all()
+    assert_model_equality(model, model_actual)
