@@ -51,8 +51,8 @@ def _serialize_eals_json_lil(model: "eals.eals.ElementwiseAlternatingLeastSquare
     model_dict["random_state"] = model.random_state
     model_dict["show_loss"] = model.show_loss
     # model parameters
-    model_dict["U"] = model.U.tolist()
-    model_dict["V"] = model.V.tolist()
+    model_dict["U"] = model.U
+    model_dict["V"] = model.V
     # data
     # TODO: coo形式を経由せずにlil形式のままserialize/deserialize
     user_items = model.user_items_lil.tocoo()
