@@ -1,10 +1,10 @@
 import gzip
-import json
 from pathlib import Path
 from typing import Union
 
 import numpy as np
 import scipy.sparse as sps
+import orjson
 
 import eals
 from .util import NumpyArrayEncoder
@@ -17,10 +17,10 @@ def serialize_eals_json(file: Union[Path, str], model: "eals.eals.ElementwiseAlt
         if not str(filepath).endswith(".gz"):
             filepath = Path(str(filepath) + ".gz")
         with gzip.open(filepath, "wb") as g:
-            g.write(json.dumps(model_dict, cls=NumpyArrayEncoder).encode("utf-8"))
+            g.write(orjson.dumps(model_dict, option=orjson.OPT_SERIALIZE_NUMPY))
     else:
-        with open(filepath, "w") as f:
-            json.dump(model_dict, f, cls=NumpyArrayEncoder)
+        with open(filepath, "wb") as f:
+            f.write(orjson.dumps(model_dict, option=orjson.OPT_SERIALIZE_NUMPY))
 
 
 def deserialize_eals_json(file: Union[Path, str]) -> "eals.eals.ElementwiseAlternatingLeastSquares":
@@ -29,10 +29,10 @@ def deserialize_eals_json(file: Union[Path, str]) -> "eals.eals.ElementwiseAlter
         is_gzip = str(filepath).endswith(".gz") and testfile.read(2) == b"\x1f\x8b"  # gzip magic number
     if is_gzip:
         with gzip.open(filepath, "rb") as g:
-            model_dict = json.loads(g.read())
+            model_dict = orjson.loads(g.read())
     else:
-        with open(filepath, "r") as f:
-            model_dict = json.load(f)
+        with open(filepath, "rb") as f:
+            model_dict = orjson.loads(f.read())
     model = _deserialize_eals_json_lil(model_dict)
     return model
 
