@@ -140,6 +140,42 @@ def test_update_model():
     pass
 
 
+def test_update_model_for_existing_user_and_item():
+    user_items = sps.csc_matrix([[1, 0, 0, 2], [1, 1, 0, 0], [0, 0, 1, 2]])
+    model = ElementwiseAlternatingLeastSquares()
+    model.fit(user_items)
+    model.update_model(2, 3)
+    assert model.user_factors().shape[0] == 3
+    assert model.item_factors().shape[0] == 4
+
+
+def test_update_model_for_new_user():
+    user_items = sps.csc_matrix([[1, 0, 0, 2], [1, 1, 0, 0], [0, 0, 1, 2]])
+    model = ElementwiseAlternatingLeastSquares()
+    model.fit(user_items)
+    model.update_model(3, 3)
+    assert model.user_factors().shape[0] == 103
+    assert model.item_factors().shape[0] == 4
+
+
+def test_update_model_for_new_item():
+    user_items = sps.csc_matrix([[1, 0, 0, 2], [1, 1, 0, 0], [0, 0, 1, 2]])
+    model = ElementwiseAlternatingLeastSquares()
+    model.fit(user_items)
+    model.update_model(2, 4)
+    assert model.user_factors().shape[0] == 3
+    assert model.item_factors().shape[0] == 104
+
+
+def test_update_model_for_new_user_and_item():
+    user_items = sps.csc_matrix([[1, 0, 0, 2], [1, 1, 0, 0], [0, 0, 1, 2]])
+    model = ElementwiseAlternatingLeastSquares()
+    model.fit(user_items)
+    model.update_model(3, 4)
+    assert model.user_factors().shape[0] == 103
+    assert model.item_factors().shape[0] == 104
+
+
 def test_calc_loss_csr():
     # 2 users, 1 item
     user_items = sps.csc_matrix([[1.0], [0.0]])
