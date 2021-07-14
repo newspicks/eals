@@ -8,6 +8,7 @@ import scipy.sparse as sps
 
 _USE_NUMBA = bool(strtobool(os.environ.get("USE_NUMBA", "True")))
 _USE_NUMBA_PARALLEL = bool(strtobool(os.environ.get("USE_NUMBA_PARALLEL", "True")))
+
 if _USE_NUMBA:
     from numba import njit, prange
 else:
