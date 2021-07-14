@@ -91,7 +91,6 @@ def _deserialize_eals_json_lil(model_dict: dict) -> "eals.eals.ElementwiseAltern
         user_items_rows = user_items_dict["row"]
         user_items_cols = user_items_dict["col"]
         user_items_shape = user_items_dict["shape"]
-        # TODO: 行列のshapeも保存しておくべき？
         user_items = sps.csr_matrix(
             (user_items_data, (user_items_rows, user_items_cols)), shape=user_items_shape
         )
