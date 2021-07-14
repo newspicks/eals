@@ -7,7 +7,6 @@ import scipy.sparse as sps
 import orjson
 
 import eals
-from .util import NumpyArrayEncoder
 
 
 def serialize_eals_json(file: Union[Path, str], model: "eals.eals.ElementwiseAlternatingLeastSquares", compress: bool = True):

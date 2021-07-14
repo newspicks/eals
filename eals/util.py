@@ -32,15 +32,3 @@ class Timer:
         elapsed_time = end_time - self.start_time
         self.start_time = end_time
         return elapsed_time.total_seconds()
-
-
-class NumpyArrayEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, np.integer):
-            return int(obj)
-        elif isinstance(obj, np.floating):
-            return float(obj)
-        elif isinstance(obj, np.ndarray):
-            return obj.tolist()
-        else:
-            return super(NumpyArrayEncoder, self).default(obj)
