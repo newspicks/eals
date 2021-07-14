@@ -11,25 +11,25 @@ import eals
 
 def serialize_eals_json(file: Union[Path, str], model: "eals.eals.ElementwiseAlternatingLeastSquares", compress: bool = True):
     filepath = Path(file)
+    if compress and not str(filepath).endswith(".gz"):
+        filepath = Path(str(filepath) + ".gz")
+
     model_dict = _serialize_eals_json_lil(model)
-    if compress:
-        if not str(filepath).endswith(".gz"):
-            filepath = Path(str(filepath) + ".gz")
-        f = gzip.open(filepath, "wb")
-    else:
-        f = open(filepath, "wb")
-    f.write(orjson.dumps(model_dict, option=orjson.OPT_SERIALIZE_NUMPY))
+
+    f = gzip.open(filepath, "wb") if compress else open(filepath, "wb")
+    with f:
+        f.write(orjson.dumps(model_dict, option=orjson.OPT_SERIALIZE_NUMPY))
 
 
 def deserialize_eals_json(file: Union[Path, str]) -> "eals.eals.ElementwiseAlternatingLeastSquares":
     filepath = Path(file)
     with open(filepath, "rb") as testfile:
         is_gzip = str(filepath).endswith(".gz") and testfile.read(2) == b"\x1f\x8b"  # gzip magic number
-    if is_gzip:
-        f = gzip.open(filepath, "rb")
-    else:
-        f = open(filepath, "rb")
-    model_dict = orjson.loads(f.read())
+
+    f = gzip.open(filepath, "rb") if is_gzip else open(filepath, "rb")
+    with f:
+        model_dict = orjson.loads(f.read())
+
     model = _deserialize_eals_json_lil(model_dict)
     return model
 
