@@ -1,5 +1,3 @@
-from typing import Union
-import pytest
 import numpy as np
 import scipy.sparse as sps
 
@@ -8,15 +6,15 @@ from eals.serializer import serialize_json, deserialize_json
 
 
 def test_serialize_and_deserialize(tmp_path):
-    # 3 users x 2 items
+    # setup: 3 users x 2 items
     user_items = sps.csr_matrix([[1.0, 0.0], [1.0, 1.0], [0.0, 0.0]])
     model = ElementwiseAlternatingLeastSquares(
-        factors=64,  # dimension of latent vectors
-        w0=10,  # overall weight of missing data
-        alpha=0.75,  # control parameter for significance level of popular items
-        reg=0.01,  # regularization parameter lambda
-        init_mean=0,  # mean of initial lantent vectors
-        init_stdev=0.01,  # stdev of initial lantent vectors
+        factors=64,
+        w0=10,
+        alpha=0.75,
+        reg=0.01,
+        init_mean=0,
+        init_stdev=0.01,
         dtype=np.float32,
         max_iter=1,
         max_iter_online=1,
@@ -24,7 +22,6 @@ def test_serialize_and_deserialize(tmp_path):
         show_loss=False,
     )
     model.fit(user_items)
-
     # test with compression
     file_gzip = (tmp_path / "model.json.gz").as_posix()
     serialize_json(file_gzip, model, compress=True)
@@ -44,7 +41,6 @@ def test_serialize_and_deserialize(tmp_path):
     assert np.allclose(model.V, model_actual.V)
     assert (model.user_items_lil.data == model_actual.user_items_lil.data).all()
     assert (model.user_items_lil.rows == model_actual.user_items_lil.rows).all()
-
     # test without compression
     file_json = (tmp_path / "model.json").as_posix()
     serialize_json(file_json, model, compress=False)
