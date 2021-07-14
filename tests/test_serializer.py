@@ -2,7 +2,7 @@ import numpy as np
 import scipy.sparse as sps
 
 from eals.eals import ElementwiseAlternatingLeastSquares
-from eals.serializer import serialize_json, deserialize_json
+from eals.serializer import serialize_eals_json, deserialize_eals_json
 
 
 def test_serialize_and_deserialize(tmp_path):
@@ -24,8 +24,8 @@ def test_serialize_and_deserialize(tmp_path):
     model.fit(user_items)
     # test with compression
     file_gzip = (tmp_path / "model.json.gz").as_posix()
-    serialize_json(file_gzip, model, compress=True)
-    model_actual = deserialize_json(file_gzip)
+    serialize_eals_json(file_gzip, model, compress=True)
+    model_actual = deserialize_eals_json(file_gzip)
     assert model.factors == model_actual.factors
     assert model.w0 == model_actual.w0
     assert model.alpha == model_actual.alpha
@@ -43,8 +43,8 @@ def test_serialize_and_deserialize(tmp_path):
     assert (model.user_items_lil.rows == model_actual.user_items_lil.rows).all()
     # test without compression
     file_json = (tmp_path / "model.json").as_posix()
-    serialize_json(file_json, model, compress=False)
-    model_actual = deserialize_json(file_json)
+    serialize_eals_json(file_json, model, compress=False)
+    model_actual = deserialize_eals_json(file_json)
     assert model.factors == model_actual.factors
     assert model.w0 == model_actual.w0
     assert model.alpha == model_actual.alpha

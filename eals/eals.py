@@ -1,14 +1,13 @@
-import datetime
 import os
 from distutils.util import strtobool
-from typing import Optional
+from typing import Optional, Union
+from pathlib import Path
 
 import numpy as np
 import scipy.sparse as sps
 
 _USE_NUMBA = bool(strtobool(os.environ.get("USE_NUMBA", "True")))
 _USE_NUMBA_PARALLEL = bool(strtobool(os.environ.get("USE_NUMBA_PARALLEL", "True")))
-
 if _USE_NUMBA:
     from numba import njit, prange
 else:
@@ -20,16 +19,8 @@ else:
 
         return nojit
 
-
-class Timer:
-    def __init__(self):
-        self.start_time = datetime.datetime.now()
-
-    def elapsed(self):
-        end_time = datetime.datetime.now()
-        elapsed_time = end_time - self.start_time
-        self.start_time = end_time
-        return elapsed_time.total_seconds()
+from .serializer import serialize_eals_json, deserialize_eals_json
+from .util import Timer
 
 
 class ElementwiseAlternatingLeastSquares:
@@ -324,6 +315,13 @@ class ElementwiseAlternatingLeastSquares:
         else:
             raise NotImplementedError(f"calc_loss() for self._training_mode='{self._training_mode}' is not defined")
         return loss
+
+    def save(self, file: Union[Path, str], compress: bool = True):
+        serialize_eals_json(file, self, compress)
+
+
+def load(file: Union[Path, str]) -> ElementwiseAlternatingLeastSquares:
+    return deserialize_eals_json(file)
 
 
 # @njit("(i8,i4[:],f4[:],f8[:,:],f8[:,:],f8[:,:],f4[:],f8[:],i8,f8)")

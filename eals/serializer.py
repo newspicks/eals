@@ -1,47 +1,43 @@
 import gzip
 import json
+from pathlib import Path
+from typing import Union
 
 import numpy as np
 import scipy.sparse as sps
 
-from .eals import ElementwiseAlternatingLeastSquares
+import eals
+from .util import NumpyArrayEncoder
 
 
-class NumpyArrayEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, np.integer):
-            return int(obj)
-        elif isinstance(obj, np.floating):
-            return float(obj)
-        elif isinstance(obj, np.ndarray):
-            return obj.tolist()
-        else:
-            return super(NumpyArrayEncoder, self).default(obj)
-
-
-def serialize_json(file: str, model: ElementwiseAlternatingLeastSquares, compress: bool = True):
-    model_dict = _serialize_json_lil(model)
+def serialize_eals_json(file: Union[Path, str], model: "eals.eals.ElementwiseAlternatingLeastSquares", compress: bool = True):
+    filepath = Path(file)
+    model_dict = _serialize_eals_json_lil(model)
     if compress:
-        with gzip.open(file, "wb") as g:
+        if not str(filepath).endswith(".gz"):
+            filepath = Path(str(filepath) + ".gz")
+        with gzip.open(filepath, "wb") as g:
             g.write(json.dumps(model_dict, cls=NumpyArrayEncoder).encode("utf-8"))
     else:
-        with open(file, "w") as f:
+        with open(filepath, "w") as f:
             json.dump(model_dict, f, cls=NumpyArrayEncoder)
 
 
-def deserialize_json(file: str) -> ElementwiseAlternatingLeastSquares:
-    is_gzip = file.endswith(".gz")  # TODO: more robust checking
+def deserialize_eals_json(file: Union[Path, str]) -> "eals.eals.ElementwiseAlternatingLeastSquares":
+    filepath = Path(file)
+    with open(filepath, "rb") as testfile:
+        is_gzip = str(filepath).endswith(".gz") and testfile.read(2) == b"\x1f\x8b"  # gzip magic number
     if is_gzip:
-        with gzip.open(file, "rb") as g:
+        with gzip.open(filepath, "rb") as g:
             model_dict = json.loads(g.read())
     else:
-        with open(file, "r") as f:
+        with open(filepath, "r") as f:
             model_dict = json.load(f)
-    model = _deserialize_json_lil(model_dict)
+    model = _deserialize_eals_json_lil(model_dict)
     return model
 
 
-def _serialize_json_lil(model: ElementwiseAlternatingLeastSquares) -> dict:
+def _serialize_eals_json_lil(model: "eals.eals.ElementwiseAlternatingLeastSquares") -> dict:
     model_dict = dict()
     # model initializer arguments
     model_dict["factors"] = model.factors
@@ -72,7 +68,7 @@ def _serialize_json_lil(model: ElementwiseAlternatingLeastSquares) -> dict:
     return model_dict
 
 
-def _deserialize_json_lil(model_dict: dict) -> ElementwiseAlternatingLeastSquares:
+def _deserialize_eals_json_lil(model_dict: dict) -> "eals.eals.ElementwiseAlternatingLeastSquares":
     # model initializer arguments
     factors = model_dict.get("factors") or 64
     w0 = model_dict.get("w0") or 10
@@ -103,7 +99,7 @@ def _deserialize_json_lil(model_dict: dict) -> ElementwiseAlternatingLeastSquare
     else:
         user_items = sps.csr_matrix(([], ([], [])), shape=(0, 0))
     # create a model object
-    model = ElementwiseAlternatingLeastSquares(
+    model = eals.eals.ElementwiseAlternatingLeastSquares(
         factors,
         w0,
         alpha,

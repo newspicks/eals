@@ -1,5 +1,7 @@
 import numpy as np
 import scipy.sparse as sps
+import json
+import datetime
 
 
 def create_user_items(
@@ -19,3 +21,26 @@ def create_user_items(
     i = np.random.randint(0, item_count, size=data_count)
     # new_user_count, new_item_countの分だけ新規ユーザ、新規アイテム格納用の余白を持たせておく
     return sps.csr_matrix((data, (u, i)), shape=(user_count + new_user_count, item_count + new_item_count))
+
+
+class Timer:
+    def __init__(self):
+        self.start_time = datetime.datetime.now()
+
+    def elapsed(self):
+        end_time = datetime.datetime.now()
+        elapsed_time = end_time - self.start_time
+        self.start_time = end_time
+        return elapsed_time.total_seconds()
+
+
+class NumpyArrayEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.integer):
+            return int(obj)
+        elif isinstance(obj, np.floating):
+            return float(obj)
+        elif isinstance(obj, np.ndarray):
+            return obj.tolist()
+        else:
+            return super(NumpyArrayEncoder, self).default(obj)
