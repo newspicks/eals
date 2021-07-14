@@ -12,7 +12,7 @@ from .util import create_user_items
 @click.command(help="run MF for all feedback data")
 @click.option("--max-iter", type=int, default=500)
 def main(max_iter):
-    batch_user_items, online_user_items = create_user_items2()
+    batch_user_items, online_user_items = create_user_items1()
     model = ElementwiseAlternatingLeastSquares(
         random_state=8, show_loss=True, max_iter=max_iter
     )
@@ -30,17 +30,13 @@ def create_user_items1():
         user_count=2000,
         item_count=1000,
         data_count=2000 * 20,
-        new_user_count=0,
-        new_item_count=0,
         rating_fn=lambda data_count: (np.random.rand(data_count) * 10 + 2).astype(np.float32),
         random_seed=8,
     )
     online_user_items = create_user_items(
-        user_count=2000,
-        item_count=1000,
-        data_count=100,
-        new_user_count=0,
-        new_item_count=0,
+        user_count=2200,
+        item_count=1100,
+        data_count=1000,
         rating_fn=lambda data_count: (np.random.rand(data_count) * 10 + 2).astype(np.float32),
         random_seed=8,
     )
@@ -55,15 +51,7 @@ def create_user_items2():
         data = json.load(f)
     train_data = data["train_data"]
     test_data = data["test_data"]
-    train_max_user_ind = max([x[0] for x in train_data])
-    train_max_item_ind = max([x[1] for x in train_data])
-    test_max_user_ind = max([x[0] for x in test_data])
-    test_max_item_ind = max([x[1] for x in test_data])
-    print(f"train_max_user_ind={train_max_user_ind}, train_max_item_ind={train_max_item_ind}")
-    print(f"test_max_user_ind={test_max_user_ind}, test_max_item_ind={test_max_item_ind}")
-    max_user_ind = max([train_max_user_ind, test_max_user_ind])
-    max_item_ind = max([train_max_item_ind, test_max_item_ind])
-    batch_user_items = create_csr_matrix(train_data, user_count=max_user_ind + 1, item_count=max_item_ind + 1)
+    batch_user_items = create_csr_matrix(train_data)
     online_user_items = create_csr_matrix(test_data)
     return batch_user_items, online_user_items
 
