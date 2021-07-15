@@ -1,7 +1,8 @@
 import gzip
 from pathlib import Path
-from typing import Union
+from typing import BinaryIO, Union, Any
 
+import joblib
 import numpy as np
 import scipy.sparse as sps
 import orjson
@@ -16,9 +17,13 @@ def serialize_eals_json(file: Union[Path, str], model: "eals.eals.ElementwiseAlt
 
     model_dict = _serialize_eals_json_lil(model)
 
-    f = gzip.open(filepath, "wb") if compress else open(filepath, "wb")
+    f: Union[gzip.GzipFile, BinaryIO] = gzip.open(filepath, "wb") if compress else open(filepath, "wb")
     with f:
         f.write(orjson.dumps(model_dict, option=orjson.OPT_SERIALIZE_NUMPY))
+
+
+def serialize_eals_joblib(file: Union[Path, str], model: "eals.eals.ElementwiseAlternatingLeastSquares", compress: int = 9):
+    joblib.dump(model, Path(file), compress=compress)
 
 
 def deserialize_eals_json(file: Union[Path, str]) -> "eals.eals.ElementwiseAlternatingLeastSquares":
@@ -26,7 +31,7 @@ def deserialize_eals_json(file: Union[Path, str]) -> "eals.eals.ElementwiseAlter
     with open(filepath, "rb") as testfile:
         is_gzip = str(filepath).endswith(".gz") and testfile.read(2) == b"\x1f\x8b"  # gzip magic number
 
-    f = gzip.open(filepath, "rb") if is_gzip else open(filepath, "rb")
+    f: Union[gzip.GzipFile, BinaryIO] = gzip.open(filepath, "rb") if is_gzip else open(filepath, "rb")
     with f:
         model_dict = orjson.loads(f.read())
 
@@ -34,8 +39,13 @@ def deserialize_eals_json(file: Union[Path, str]) -> "eals.eals.ElementwiseAlter
     return model
 
 
+def deserialize_eals_joblib(file: Union[Path, str]) -> "eals.eals.ElementwiseAlternatingLeastSquares":
+    model: eals.eals.ElementwiseAlternatingLeastSquares = joblib.load(Path(file))
+    return model
+
+
 def _serialize_eals_json_lil(model: "eals.eals.ElementwiseAlternatingLeastSquares") -> dict:
-    model_dict = dict()
+    model_dict: dict[str, Any] = dict()
     # model initializer arguments
     model_dict["factors"] = model.factors
     model_dict["w0"] = model.w0

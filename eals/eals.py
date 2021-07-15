@@ -20,7 +20,7 @@ else:
 
         return nojit
 
-from .serializer import serialize_eals_json, deserialize_eals_json
+from .serializer import serialize_eals_joblib, serialize_eals_json, deserialize_eals_joblib, deserialize_eals_json
 from .util import Timer
 
 
@@ -350,12 +350,28 @@ class ElementwiseAlternatingLeastSquares:
             )
         return loss
 
-    def save(self, file: Union[Path, str], compress: bool = True):
-        serialize_eals_json(file, self, compress)
+    def save(self, file: Union[Path, str], compress: Union[bool, int] = True):
+        # TODO: filetypeの分岐はserializer.pyでやる
+        ext = ''.join(Path(file).suffixes)
+        if ext == ".joblib":
+            if isinstance(compress, bool):
+                compress = 9 if compress else 0
+            serialize_eals_joblib(file, self, compress=compress)
+            return
+        if ext in (".json", ".json.gz"):
+            compress = bool(compress)
+            serialize_eals_json(file, self, compress=compress)
+            return
+        raise ValueError(f"filetype {ext} is not supported")
 
 
 def load_model(file: Union[Path, str]) -> ElementwiseAlternatingLeastSquares:
-    return deserialize_eals_json(file)
+    ext = ''.join(Path(file).suffixes)
+    if ext == ".joblib":
+        return deserialize_eals_joblib(file)
+    if ext in (".json", ".json.gz"):
+        return deserialize_eals_json(file)
+    raise ValueError(f"filetype {ext} is not supported")
 
 
 # @njit("(i8,i4[:],f4[:],f8[:,:],f8[:,:],f8[:,:],f4[:],f8[:],i8,f8)")

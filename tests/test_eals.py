@@ -160,7 +160,7 @@ def test_update_model():
 
 def test_update_model_for_existing_user_and_item():
     user_items = sps.csc_matrix([[1, 0, 0, 2], [1, 1, 0, 0], [0, 0, 1, 2]])
-    model = ElementwiseAlternatingLeastSquares()
+    model = ElementwiseAlternatingLeastSquares(max_iter=1)
     model.fit(user_items)
     model.update_model(2, 3)
     assert model.user_factors().shape[0] == 3
@@ -169,7 +169,7 @@ def test_update_model_for_existing_user_and_item():
 
 def test_update_model_for_new_user():
     user_items = sps.csc_matrix([[1, 0, 0, 2], [1, 1, 0, 0], [0, 0, 1, 2]])
-    model = ElementwiseAlternatingLeastSquares()
+    model = ElementwiseAlternatingLeastSquares(max_iter=1)
     model.fit(user_items)
     model.update_model(3, 3)
     assert model.user_factors().shape[0] == 103
@@ -178,7 +178,7 @@ def test_update_model_for_new_user():
 
 def test_update_model_for_new_item():
     user_items = sps.csc_matrix([[1, 0, 0, 2], [1, 1, 0, 0], [0, 0, 1, 2]])
-    model = ElementwiseAlternatingLeastSquares()
+    model = ElementwiseAlternatingLeastSquares(max_iter=1)
     model.fit(user_items)
     model.update_model(2, 4)
     assert model.user_factors().shape[0] == 3
@@ -187,7 +187,7 @@ def test_update_model_for_new_item():
 
 def test_update_model_for_new_user_and_item():
     user_items = sps.csc_matrix([[1, 0, 0, 2], [1, 1, 0, 0], [0, 0, 1, 2]])
-    model = ElementwiseAlternatingLeastSquares()
+    model = ElementwiseAlternatingLeastSquares(max_iter=1)
     model.fit(user_items)
     model.update_model(3, 4)
     assert model.user_factors().shape[0] == 103
@@ -251,14 +251,26 @@ def test_save_and_load_model(tmp_path):
     )
     model.fit(user_items)
 
-    # test with compression
+    # test .json
+    file_json = (tmp_path / "model.json").as_posix()
+    model.save(file_json, compress=False)
+    model_actual = load_model(file_json)
+    assert_model_equality(model, model_actual)
+
+    # test .json.gz
     file_gzip = (tmp_path / "model.json.gz").as_posix()
     model.save(file_gzip, compress=True)
     model_actual = load_model(file_gzip)
     assert_model_equality(model, model_actual)
 
-    # test without compression
-    file_json = (tmp_path / "model.json").as_posix()
-    model.save(file_json, compress=False)
-    model_actual = load_model(file_json)
+    # test .joblib without compression
+    file_joblib = (tmp_path / "model0.joblib").as_posix()
+    model.save(file_joblib, compress=0)
+    model_actual = load_model(file_joblib)
+    assert_model_equality(model, model_actual)
+
+    # test .joblib with compression
+    file_joblib = (tmp_path / "model9.joblib").as_posix()
+    model.save(file_joblib, compress=9)
+    model_actual = load_model(file_joblib)
     assert_model_equality(model, model_actual)

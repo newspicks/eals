@@ -2,7 +2,7 @@ import numpy as np
 import scipy.sparse as sps
 
 from eals.eals import ElementwiseAlternatingLeastSquares
-from eals.serializer import serialize_eals_json, deserialize_eals_json
+from eals.serializer import deserialize_eals_joblib, serialize_eals_joblib, serialize_eals_json, deserialize_eals_json
 
 
 def assert_model_equality(model1, model2):
@@ -41,14 +41,26 @@ def test_serialize_and_deserialize(tmp_path):
     )
     model.fit(user_items)
     
-    # test with compression
+    # test .json
+    file_json = (tmp_path / "model.json").as_posix()
+    serialize_eals_json(file_json, model, compress=False)
+    model_actual = deserialize_eals_json(file_json)
+    assert_model_equality(model, model_actual)
+
+    # test .json.gz
     file_gzip = (tmp_path / "model.json.gz").as_posix()
     serialize_eals_json(file_gzip, model, compress=True)
     model_actual = deserialize_eals_json(file_gzip)
     assert_model_equality(model, model_actual)
 
-    # test without compression
-    file_json = (tmp_path / "model.json").as_posix()
-    serialize_eals_json(file_json, model, compress=False)
-    model_actual = deserialize_eals_json(file_json)
+    # test .joblib without compression
+    file_joblib = (tmp_path / "model0.joblib").as_posix()
+    serialize_eals_joblib(file_joblib, model, compress=0)
+    model_actual = deserialize_eals_joblib(file_joblib)
+    assert_model_equality(model, model_actual)
+
+    # test .joblib with compression
+    file_joblib = (tmp_path / "model9.joblib").as_posix()
+    serialize_eals_joblib(file_joblib, model, compress=9)
+    model_actual = deserialize_eals_joblib(file_joblib)
     assert_model_equality(model, model_actual)
