@@ -126,10 +126,10 @@ class ElementwiseAlternatingLeastSquares:
         self.W_csc = self.W.tocsc()
 
         # オンライン学習用データ＆ウェイト（実際の初期化はオンライン学習開始時に行う）
-        self.user_items_lil = None
-        self.user_items_lil_t = None
-        self.W_lil = None
-        self.W_lil_t = None
+        self.user_items_lil = sps.lil_matrix((0, 0))
+        self.user_items_lil_t = sps.lil_matrix((0, 0))
+        self.W_lil = sps.lil_matrix((0, 0))
+        self.W_lil_t = sps.lil_matrix((0, 0))
 
         if self.random_state is not None:
             np.random.seed(self.random_state)
@@ -138,7 +138,7 @@ class ElementwiseAlternatingLeastSquares:
             if U0 is not None
             else np.random.normal(self.init_mean, self.init_stdev, (self.user_count, self.factors))
         )
-        self.V = (
+        self.V: np.ndarray = (
             V0
             if V0 is not None
             else np.random.normal(self.init_mean, self.init_stdev, (self.item_count, self.factors))
