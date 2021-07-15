@@ -18,8 +18,8 @@ def load_data(file):
     file_npy = os.path.splitext(file)[0] + "-train_data.npy"
     if os.path.exists(file_npy):
         print(f"(use cache: {file_npy}) ", end="")
-        with open(file_npy, "rb") as f:
-            data = np.load(f)
+        with open(file_npy, "rb") as f_npy:
+            data = np.load(f_npy)
     else:
         with open(file) as f:
             rawdata = json.load(f)["train_data"]
@@ -69,14 +69,10 @@ def bench_random_data(mat_type):
         print("  create data: ", end="")
         t = time.time()
         data_count = user_count * 20
-        new_user_count = int(user_count / 100)
-        new_item_count = int(item_count / 100)
         train_data = create_user_items(
             user_count=user_count,
             item_count=item_count,
             data_count=data_count,
-            new_user_count=new_user_count,
-            new_item_count=new_item_count,
         )
         print(f"{time.time() - t} sec")
         print(f"    {user_count=}, {item_count=}")

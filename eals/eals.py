@@ -118,10 +118,10 @@ class ElementwiseAlternatingLeastSquares:
         self.W_csc = self.W.tocsc()
 
         # オンライン学習用データ＆ウェイト（実際の初期化はオンライン学習開始時に行う）
-        self.user_items_lil = None
-        self.user_items_lil_t = None
-        self.W_lil = None
-        self.W_lil_t = None
+        self.user_items_lil = sps.lil_matrix((0, 0))
+        self.user_items_lil_t = sps.lil_matrix((0, 0))
+        self.W_lil = sps.lil_matrix((0, 0))
+        self.W_lil_t = sps.lil_matrix((0, 0))
 
         if self.random_state is not None:
             np.random.seed(self.random_state)
@@ -130,7 +130,7 @@ class ElementwiseAlternatingLeastSquares:
             if U0 is not None
             else np.random.normal(self.init_mean, self.init_stdev, (self.user_count, self.factors))
         )
-        self.V = (
+        self.V: np.ndarray = (
             V0
             if V0 is not None
             else np.random.normal(self.init_mean, self.init_stdev, (self.item_count, self.factors))
@@ -250,10 +250,41 @@ class ElementwiseAlternatingLeastSquares:
             self.item_count,
         )
 
+    def _expand_data(self, u, i):
+        """新規ユーザー、新規アイテムならデータのサイズを拡張する"""
+        extra_count = 100
+        if u >= self.user_count:
+            new_user_count = u + extra_count
+        else:
+            new_user_count = self.user_count
+        if i >= self.item_count:
+            new_item_count = i + extra_count
+        else:
+            new_item_count = self.item_count
+
+        if new_user_count > self.user_count or new_item_count > self.item_count:
+            self.user_items_lil.resize(new_user_count, new_item_count)
+            self.user_items_lil_t.resize(new_item_count, new_user_count)
+            self.W_lil.resize(new_user_count, new_item_count)
+            self.W_lil_t.resize(new_item_count, new_user_count)
+        if new_user_count > self.user_count:
+            adding_user_count = new_user_count - self.user_count
+            # user_count, factors
+            self.U = np.vstack((self.U, np.zeros((adding_user_count, self.U.shape[1]))))
+        if new_item_count > self.item_count:
+            adding_item_count = new_item_count - self.item_count
+            # item_count, factors
+            self.V = np.vstack((self.V, np.zeros((adding_item_count, self.V.shape[1]))))
+            self.Wi = np.append(self.Wi, np.zeros(adding_item_count))
+
+        self.user_count = new_user_count
+        self.item_count = new_item_count
+
     def update_model(self, u, i):
         """データを1件追加してモデルを更新"""
         timer = Timer()
         self._convert_data_for_online_training()
+        self._expand_data(u, i)
         # TODO: 新規ユーザ、新規アイテムに対応できていないのでは？（IndexErrorになるだけ）
         # あらかじめ将来追加されるのユーザ、アイテムの分まで行列確保しておくのであればこれでもよいが…
         self.user_items_lil[u, i] = 1
@@ -314,7 +345,9 @@ class ElementwiseAlternatingLeastSquares:
                 self.reg,
             )
         else:
-            raise NotImplementedError(f"calc_loss() for self._training_mode='{self._training_mode}' is not defined")
+            raise NotImplementedError(
+                f"calc_loss() for self._training_mode='{self._training_mode}' is not defined"
+            )
         return loss
 
     def save(self, file: Union[Path, str], compress: bool = True):
@@ -440,7 +473,9 @@ def _calc_loss_csr(indptr, indices, data, U, V, SV, w_indptr, w_data, Wi, user_c
             pred = U[u] @ V[i]
             loss += w * ((rating - pred) ** 2)
             loss -= Wi[i] * (pred ** 2)  # for non-missing items
-        loss += SV @ U[u] @ U[u]  # sum of (Wi[i] * (pred ** 2)) for all (= missing + non-missing) items
+        loss += (
+            SV @ U[u] @ U[u]
+        )  # sum of (Wi[i] * (pred ** 2)) for all (= missing + non-missing) items
     return loss
 
 
