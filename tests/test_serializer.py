@@ -1,8 +1,10 @@
+import filecmp
+
 import numpy as np
 import scipy.sparse as sps
 
 from eals.eals import ElementwiseAlternatingLeastSquares
-from eals.serializer import deserialize_eals_joblib, serialize_eals_joblib, serialize_eals_json, deserialize_eals_json
+from eals.serializer import deserialize_eals_joblib, serialize_eals_joblib
 
 
 def assert_model_equality(model1, model2):
@@ -40,27 +42,31 @@ def test_serialize_and_deserialize(tmp_path):
         show_loss=False,
     )
     model.fit(user_items)
-    
-    # test .json
-    file_json = (tmp_path / "model.json").as_posix()
-    serialize_eals_json(file_json, model, compress=False)
-    model_actual = deserialize_eals_json(file_json)
-    assert_model_equality(model, model_actual)
 
-    # test .json.gz
-    file_gzip = (tmp_path / "model.json.gz").as_posix()
-    serialize_eals_json(file_gzip, model, compress=True)
-    model_actual = deserialize_eals_json(file_gzip)
-    assert_model_equality(model, model_actual)
-
-    # test .joblib without compression
-    file_joblib = (tmp_path / "model0.joblib").as_posix()
+    # Test .joblib without compression.
+    # Also check that compress=0 and compress=False give the same result.
+    file_joblib = (tmp_path / "model_compress-0.joblib").as_posix()
     serialize_eals_joblib(file_joblib, model, compress=0)
     model_actual = deserialize_eals_joblib(file_joblib)
     assert_model_equality(model, model_actual)
 
-    # test .joblib with compression
-    file_joblib = (tmp_path / "model9.joblib").as_posix()
-    serialize_eals_joblib(file_joblib, model, compress=9)
+    file_joblib = (tmp_path / "model_compress-false.joblib").as_posix()
+    serialize_eals_joblib(file_joblib, model, compress=False)
     model_actual = deserialize_eals_joblib(file_joblib)
     assert_model_equality(model, model_actual)
+
+    assert filecmp.cmp(tmp_path / "model_compress-0.joblib", tmp_path / "model_compress-false.joblib", shallow=False)
+
+    # Test .joblib with compression.
+    # compress=3 and compress=True give the same result.
+    file_joblib = (tmp_path / "model_compress-3.joblib").as_posix()
+    serialize_eals_joblib(file_joblib, model, compress=3)
+    model_actual = deserialize_eals_joblib(file_joblib)
+    assert_model_equality(model, model_actual)
+
+    file_joblib = (tmp_path / "model_compress-true.joblib").as_posix()
+    serialize_eals_joblib(file_joblib, model, compress=True)
+    model_actual = deserialize_eals_joblib(file_joblib)
+    assert_model_equality(model, model_actual)
+
+    assert filecmp.cmp(tmp_path / "model_compress-3.joblib", tmp_path / "model_compress-true.joblib", shallow=False)

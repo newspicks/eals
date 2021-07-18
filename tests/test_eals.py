@@ -250,27 +250,14 @@ def test_save_and_load_model(tmp_path):
         show_loss=False,
     )
     model.fit(user_items)
-
-    # test .json
-    file_json = (tmp_path / "model.json").as_posix()
-    model.save(file_json, compress=False)
-    model_actual = load_model(file_json)
-    assert_model_equality(model, model_actual)
-
-    # test .json.gz
-    file_gzip = (tmp_path / "model.json.gz").as_posix()
-    model.save(file_gzip, compress=True)
-    model_actual = load_model(file_gzip)
-    assert_model_equality(model, model_actual)
-
     # test .joblib without compression
-    file_joblib = (tmp_path / "model0.joblib").as_posix()
-    model.save(file_joblib, compress=0)
+    file_joblib = (tmp_path / "model_nocompress.joblib").as_posix()
+    model.save(file_joblib, compress=False)
     model_actual = load_model(file_joblib)
     assert_model_equality(model, model_actual)
 
     # test .joblib with compression
-    file_joblib = (tmp_path / "model9.joblib").as_posix()
-    model.save(file_joblib, compress=9)
+    file_joblib = (tmp_path / "model_compress.joblib").as_posix()
+    model.save(file_joblib, compress=True)
     model_actual = load_model(file_joblib)
     assert_model_equality(model, model_actual)
