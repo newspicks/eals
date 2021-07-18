@@ -1,7 +1,7 @@
-import datetime
 import os
 from distutils.util import strtobool
-from typing import Optional
+from typing import Optional, Union
+from pathlib import Path
 
 import numpy as np
 import scipy.sparse as sps
@@ -20,16 +20,8 @@ else:
 
         return nojit
 
-
-class Timer:
-    def __init__(self):
-        self.start_time = datetime.datetime.now()
-
-    def elapsed(self):
-        end_time = datetime.datetime.now()
-        elapsed_time = end_time - self.start_time
-        self.start_time = end_time
-        return elapsed_time.total_seconds()
+from .serializer import serialize_eals_joblib, deserialize_eals_joblib
+from .util import Timer
 
 
 class ElementwiseAlternatingLeastSquares:
@@ -357,6 +349,25 @@ class ElementwiseAlternatingLeastSquares:
                 f"calc_loss() for self._training_mode='{self._training_mode}' is not defined"
             )
         return loss
+
+    def save(self, file: Union[Path, str], compress: Union[bool, int] = True):
+        """Save the model in joblib format.
+
+        Args:
+            file: File name or path object
+            compress: Joblib compression level (0-9).
+                False or 0 disables compression. True(default) uses a compression level of 3.
+        """
+        serialize_eals_joblib(file, self, compress=compress)
+
+
+def load_model(file: Union[Path, str]) -> ElementwiseAlternatingLeastSquares:
+    """Load the model from a joblib file.
+
+    Args:
+        file: File name or path object
+    """
+    return deserialize_eals_joblib(file)
 
 
 # @njit("(i8,i4[:],f4[:],f8[:,:],f8[:,:],f8[:,:],f4[:],f8[:],i8,f8)")

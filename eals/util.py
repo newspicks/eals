@@ -1,5 +1,6 @@
 import numpy as np
 import scipy.sparse as sps
+import datetime
 
 
 def create_user_items(
@@ -16,3 +17,14 @@ def create_user_items(
     u = np.random.randint(0, user_count, size=data_count)
     i = np.random.randint(0, item_count, size=data_count)
     return sps.csr_matrix((data, (u, i)), shape=(user_count, item_count))
+
+
+class Timer:
+    def __init__(self):
+        self.start_time = datetime.datetime.now()
+
+    def elapsed(self):
+        end_time = datetime.datetime.now()
+        elapsed_time = end_time - self.start_time
+        self.start_time = end_time
+        return elapsed_time.total_seconds()

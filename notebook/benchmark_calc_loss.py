@@ -39,12 +39,13 @@ def bench_real_data(file, mat_type):
     u, i, d = load_data(file)
     user_count = u.max()
     item_count = i.max()
+    nnz = len(d)
     new_user_count = int(user_count / 100)
     new_item_count = int(item_count / 100)
     train_data = sps.csr_matrix((d, (u, i)), shape=(user_count + new_user_count, item_count + new_item_count))
     del u, i, d
     print(f"{time.time() - t} sec")
-    print(f"    {user_count=}, {item_count=}")
+    print(f"    {user_count=}, {item_count=}, {nnz=}")
 
     print("  setup: ", end="")
     t0 = time.time()

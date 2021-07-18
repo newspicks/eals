@@ -1,7 +1,25 @@
 import numpy as np
 import scipy.sparse as sps
 
-from eals.eals import ElementwiseAlternatingLeastSquares
+from eals.eals import ElementwiseAlternatingLeastSquares, load_model
+
+
+def assert_model_equality(model1, model2):
+    assert model1.factors == model2.factors
+    assert model1.w0 == model2.w0
+    assert model1.alpha == model2.alpha
+    assert model1.reg == model2.reg
+    assert model1.init_mean == model2.init_mean
+    assert model1.init_stdev == model2.init_stdev
+    assert model1.dtype == model2.dtype
+    assert model1.max_iter == model2.max_iter
+    assert model1.max_iter_online == model2.max_iter_online
+    assert model1.random_state == model2.random_state
+    assert model1.show_loss == model2.show_loss
+    assert np.allclose(model1.U, model2.U)
+    assert np.allclose(model1.V, model2.V)
+    assert (model1.user_items_lil.data == model2.user_items_lil.data).all()
+    assert (model1.user_items_lil.rows == model2.user_items_lil.rows).all()
 
 
 def test_init_data():
@@ -142,7 +160,7 @@ def test_update_model():
 
 def test_update_model_for_existing_user_and_item():
     user_items = sps.csc_matrix([[1, 0, 0, 2], [1, 1, 0, 0], [0, 0, 1, 2]])
-    model = ElementwiseAlternatingLeastSquares()
+    model = ElementwiseAlternatingLeastSquares(max_iter=1)
     model.fit(user_items)
     model.update_model(2, 3)
     assert model.user_factors().shape[0] == 3
@@ -151,7 +169,7 @@ def test_update_model_for_existing_user_and_item():
 
 def test_update_model_for_new_user():
     user_items = sps.csc_matrix([[1, 0, 0, 2], [1, 1, 0, 0], [0, 0, 1, 2]])
-    model = ElementwiseAlternatingLeastSquares()
+    model = ElementwiseAlternatingLeastSquares(max_iter=1)
     model.fit(user_items)
     model.update_model(3, 3)
     assert model.user_factors().shape[0] == 103
@@ -160,7 +178,7 @@ def test_update_model_for_new_user():
 
 def test_update_model_for_new_item():
     user_items = sps.csc_matrix([[1, 0, 0, 2], [1, 1, 0, 0], [0, 0, 1, 2]])
-    model = ElementwiseAlternatingLeastSquares()
+    model = ElementwiseAlternatingLeastSquares(max_iter=1)
     model.fit(user_items)
     model.update_model(2, 4)
     assert model.user_factors().shape[0] == 3
@@ -169,7 +187,7 @@ def test_update_model_for_new_item():
 
 def test_update_model_for_new_user_and_item():
     user_items = sps.csc_matrix([[1, 0, 0, 2], [1, 1, 0, 0], [0, 0, 1, 2]])
-    model = ElementwiseAlternatingLeastSquares()
+    model = ElementwiseAlternatingLeastSquares(max_iter=1)
     model.fit(user_items)
     model.update_model(3, 4)
     assert model.user_factors().shape[0] == 103
@@ -213,3 +231,33 @@ def test_calc_loss_lil():
     l_user1 = Wi * (U0[1] @ V0[0]) ** 2  # missing data term
     loss_expected = l_reg + l_user0 + l_user1
     assert np.allclose(model.calc_loss(), loss_expected)
+
+
+def test_save_and_load_model(tmp_path):
+    # setup: 3 users x 2 items
+    user_items = sps.csr_matrix([[1.0, 0.0], [1.0, 1.0], [0.0, 0.0]])
+    model = ElementwiseAlternatingLeastSquares(
+        factors=64,
+        w0=10,
+        alpha=0.75,
+        reg=0.01,
+        init_mean=0,
+        init_stdev=0.01,
+        dtype=np.float32,
+        max_iter=1,
+        max_iter_online=1,
+        random_state=None,
+        show_loss=False,
+    )
+    model.fit(user_items)
+    # test .joblib without compression
+    file_joblib = (tmp_path / "model_nocompress.joblib").as_posix()
+    model.save(file_joblib, compress=False)
+    model_actual = load_model(file_joblib)
+    assert_model_equality(model, model_actual)
+
+    # test .joblib with compression
+    file_joblib = (tmp_path / "model_compress.joblib").as_posix()
+    model.save(file_joblib, compress=True)
+    model_actual = load_model(file_joblib)
+    assert_model_equality(model, model_actual)
