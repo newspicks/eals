@@ -1,6 +1,7 @@
+from unittest import mock
+
 import numpy as np
 import scipy.sparse as sps
-from unittest import mock
 
 from eals.eals import ElementwiseAlternatingLeastSquares, load_model
 

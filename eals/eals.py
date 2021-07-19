@@ -1,7 +1,7 @@
 import os
 from distutils.util import strtobool
-from typing import Optional, Union
 from pathlib import Path
+from typing import Optional, Union
 
 import numpy as np
 import scipy.sparse as sps
@@ -20,7 +20,8 @@ else:
 
         return nojit
 
-from .serializer import serialize_eals_joblib, deserialize_eals_joblib
+
+from .serializer import deserialize_eals_joblib, serialize_eals_joblib
 from .util import Timer
 
 
@@ -58,10 +59,7 @@ class ElementwiseAlternatingLeastSquares:
 
         self._training_mode = "batch"  # "batch" (use csr/csc matrix) or "online" (use lil matrix)
 
-    def fit(
-        self,
-        user_items: sps.spmatrix,
-    ):
+    def fit(self, user_items: sps.spmatrix):
         """バッチ行列分解
 
         Args:
@@ -80,10 +78,7 @@ class ElementwiseAlternatingLeastSquares:
 
         self._convert_data_for_online_training()
 
-    def init_data(
-        self,
-        user_items: sps.spmatrix,
-    ):
+    def init_data(self, user_items: sps.spmatrix):
         """バッチ行列分解時のデータ初期化"""
 
         # item_usersがnp.float32のcsr_matrixでなければ変換
