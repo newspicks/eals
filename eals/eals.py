@@ -413,10 +413,10 @@ def _update_user_and_SU_all(
 ):
     # U and SU will be modified. Other arguments are read-only.
     for u in prange(user_count):
-        user_inds = indices[indptr[u] : indptr[u + 1]]
-        user_ratings = data[indptr[u] : indptr[u + 1]]
+        item_inds = indices[indptr[u] : indptr[u + 1]]
+        item_ratings = data[indptr[u] : indptr[u + 1]]
         w_items = w_data[w_indptr[u] : w_indptr[u + 1]]
-        _update_user(u, user_inds, user_ratings, U, V, SV, w_items, Wi, factors, reg)
+        _update_user(u, item_inds, item_ratings, U, V, SV, w_items, Wi, factors, reg)
     # in-place assignment
     SU[:] = U.T @ U
 
