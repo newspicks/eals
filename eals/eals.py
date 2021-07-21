@@ -1,7 +1,8 @@
+import gc
 import os
 from distutils.util import strtobool
-from typing import Optional, Union
 from pathlib import Path
+from typing import Optional, Union
 
 import numpy as np
 import scipy.sparse as sps
@@ -20,7 +21,7 @@ else:
 
         return nojit
 
-from .serializer import serialize_eals_joblib, deserialize_eals_joblib
+from .serializer import deserialize_eals_joblib, serialize_eals_joblib
 from .util import Timer
 
 
@@ -144,28 +145,41 @@ class ElementwiseAlternatingLeastSquares:
         # update_model()等のためにlil_matrixに変換
         if self._training_mode == "online":
             return
-        self.user_items_lil = self.user_items.tolil()
-        self.user_items_lil_t = self.user_items_lil.T
-        self.W_lil = self.W.tolil()
-        self.W_lil_t = self.W_lil.T
-        del self.user_items
         del self.user_items_csc
-        del self.W
         del self.W_csc
+        gc.collect()
+
+        self.user_items_lil = self.user_items.tolil()
+        del self.user_items
+        gc.collect()
+        self.user_items_lil_t = self.user_items_lil.T
+
+        self.W_lil = self.W.tolil()
+        del self.W
+        gc.collect()
+        self.W_lil_t = self.W_lil.T
+
         self._training_mode = "online"
 
     def _convert_data_for_batch_training(self):
         # update_user_and_SU_all()等のためにcsr/csc matrixに変換
         if self._training_mode == "batch":
             return
-        self.user_items = self.user_items_lil.tocsr()
-        self.user_items_csc = self.user_items.tocsc()
-        self.W = self.W_lil.tocsr()
-        self.W_csc = self.W.tocsc()
-        del self.user_items_lil
+
         del self.user_items_lil_t
-        del self.W_lil
         del self.W_lil_t
+        gc.collect()
+
+        self.user_items = self.user_items_lil.tocsr()
+        del self.user_items_lil
+        gc.collect()
+        self.user_items_csc = self.user_items.tocsc()
+
+        self.W = self.W_lil.tocsr()
+        del self.W_lil
+        gc.collect()
+        self.W_csc = self.W.tocsc()
+
         self._training_mode = "batch"
 
     def user_factors(self):
