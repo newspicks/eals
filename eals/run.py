@@ -10,11 +10,11 @@ from .util import create_user_items
 
 
 @click.command(help="run MF for all feedback data")
-@click.option("--max-iter", type=int, default=500)
-def main(max_iter):
+@click.option("--num-iter", type=int, default=50)
+def main(num_iter):
     batch_user_items, online_user_items = create_user_items1()
     model = ElementwiseAlternatingLeastSquares(
-        random_state=8, show_loss=True, max_iter=max_iter
+        random_state=8, show_loss=True, num_iter=num_iter
     )
     model.fit(batch_user_items)
     for vec in model.user_factors()[:3]:
