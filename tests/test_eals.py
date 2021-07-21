@@ -8,12 +8,12 @@ def assert_model_equality(model1, model2):
     assert model1.factors == model2.factors
     assert model1.w0 == model2.w0
     assert model1.alpha == model2.alpha
-    assert model1.reg == model2.reg
+    assert model1.regularization == model2.regularization
     assert model1.init_mean == model2.init_mean
     assert model1.init_stdev == model2.init_stdev
     assert model1.dtype == model2.dtype
-    assert model1.max_iter == model2.max_iter
-    assert model1.max_iter_online == model2.max_iter_online
+    assert model1.num_iter == model2.num_iter
+    assert model1.num_iter_online == model2.num_iter_online
     assert model1.random_state == model2.random_state
     assert model1.show_loss == model2.show_loss
     assert np.allclose(model1.U, model2.U)
@@ -36,29 +36,29 @@ def test_init_data():
 def test_update_user():
     # Test for a trivial case:
     # - 1x1 rating matrix and 1x1 latent vectors with all initial values being 1
-    # - This implies U[0,0] = 1 / (1 + reg) after the 1st update
+    # - This implies U[0,0] = 1 / (1 + regularization) after the 1st update
     user_items = sps.csc_matrix([[1.0]])
     U0 = V0 = np.array([[1.0]])
-    reg = 0.01
-    model = ElementwiseAlternatingLeastSquares(reg=reg, factors=U0.shape[1])
+    regularization = 0.01
+    model = ElementwiseAlternatingLeastSquares(regularization=regularization, factors=U0.shape[1])
     model.init_data(user_items, U0, V0)
     old_user_vec = model.update_user(0)
     assert np.allclose(old_user_vec, [[1.0]])
-    assert np.allclose(model.U, [[1 / (1 + reg)]])
+    assert np.allclose(model.U, [[1 / (1 + regularization)]])
 
 
 def test_update_item():
     # Test for a trivial case:
     # - 1x1 rating matrix and 1x1 latent vectors with all initial values being 1
-    # - This implies V[0,0] = 1 / (1 + reg) after the 1st update
+    # - This implies V[0,0] = 1 / (1 + regularization) after the 1st update
     user_items = sps.csc_matrix([[1.0]])
     U0 = V0 = np.array([[1.0]])
-    reg = 0.02
-    model = ElementwiseAlternatingLeastSquares(reg=reg, factors=U0.shape[1])
+    regularization = 0.02
+    model = ElementwiseAlternatingLeastSquares(regularization=regularization, factors=U0.shape[1])
     model.init_data(user_items, U0, V0)
     old_item_vec = model.update_item(0)
     assert np.allclose(old_item_vec, [[1.0]])
-    assert np.allclose(model.V, [[1 / (1 + reg)]])
+    assert np.allclose(model.V, [[1 / (1 + regularization)]])
 
 
 def test_update_SU_with_factor1d():
@@ -109,11 +109,11 @@ def test_update_user_and_SU_all():
     # Almost the same test as test_update_user()
     user_items = sps.csc_matrix([[1.0]])
     U0 = V0 = np.array([[1.0]])
-    reg = 0.01
-    model = ElementwiseAlternatingLeastSquares(reg=reg, factors=U0.shape[1])
+    regularization = 0.01
+    model = ElementwiseAlternatingLeastSquares(regularization=regularization, factors=U0.shape[1])
     model.init_data(user_items, U0, V0)
     model.update_user_and_SU_all()
-    assert np.allclose(model.U, [[1 / (1 + reg)]])
+    assert np.allclose(model.U, [[1 / (1 + regularization)]])
     assert np.allclose(model.SU, model.U.T @ model.U)
 
 
@@ -121,19 +121,19 @@ def test_update_item_and_SV_all():
     # Almost the same test as test_update_item()
     user_items = sps.csc_matrix([[1.0]])
     U0 = V0 = np.array([[1.0]])
-    reg = 0.02
-    model = ElementwiseAlternatingLeastSquares(reg=reg, factors=U0.shape[1])
+    regularization = 0.02
+    model = ElementwiseAlternatingLeastSquares(regularization=regularization, factors=U0.shape[1])
     model.init_data(user_items, U0, V0)
     model.update_item_and_SV_all()
-    assert np.allclose(model.V, [[1 / (1 + reg)]])
+    assert np.allclose(model.V, [[1 / (1 + regularization)]])
     assert np.allclose(model.SV, (model.V.T * model.Wi) @ model.V)
 
 
 def test_fit_no_iteration():
     user_items = sps.csc_matrix([[1.0, 0.0], [1.0, 1.0]])
     U0 = V0 = np.array([[0.5, 0.1, 0.2], [0.7, 0.8, 0.9]])
-    # Nothing happens if max_iter=0
-    model = ElementwiseAlternatingLeastSquares(max_iter=0, factors=U0.shape[1])
+    # Nothing happens if num_iter=0
+    model = ElementwiseAlternatingLeastSquares(num_iter=0, factors=U0.shape[1])
     model.fit(user_items, U0, V0)
     assert np.allclose(model.U, U0)
     assert np.allclose(model.V, V0)
@@ -142,8 +142,8 @@ def test_fit_no_iteration():
 def test_fit_one_iteration():
     user_items = sps.csc_matrix([[1.0, 0.0], [1.0, 1.0]])
     U0 = V0 = np.array([[0.5, 0.1, 0.2], [0.7, 0.8, 0.9]])
-    # (fit with max_iter=1) == init_data + update_user_and_SU_all + update_item_and_SV_all
-    model_actual = ElementwiseAlternatingLeastSquares(max_iter=1, factors=U0.shape[1])
+    # (fit with num_iter=1) == init_data + update_user_and_SU_all + update_item_and_SV_all
+    model_actual = ElementwiseAlternatingLeastSquares(num_iter=1, factors=U0.shape[1])
     model_actual.fit(user_items, U0, V0)
     model_expected = ElementwiseAlternatingLeastSquares(factors=U0.shape[1])
     model_expected.init_data(user_items, U0, V0)
@@ -160,7 +160,7 @@ def test_update_model():
 
 def test_update_model_for_existing_user_and_item():
     user_items = sps.csc_matrix([[1, 0, 0, 2], [1, 1, 0, 0], [0, 0, 1, 2]])
-    model = ElementwiseAlternatingLeastSquares(max_iter=1)
+    model = ElementwiseAlternatingLeastSquares(num_iter=1)
     model.fit(user_items)
     model.update_model(2, 3)
     assert model.user_factors().shape[0] == 3
@@ -169,7 +169,7 @@ def test_update_model_for_existing_user_and_item():
 
 def test_update_model_for_new_user():
     user_items = sps.csc_matrix([[1, 0, 0, 2], [1, 1, 0, 0], [0, 0, 1, 2]])
-    model = ElementwiseAlternatingLeastSquares(max_iter=1)
+    model = ElementwiseAlternatingLeastSquares(num_iter=1)
     model.fit(user_items)
     model.update_model(3, 3)
     assert model.user_factors().shape[0] == 103
@@ -178,7 +178,7 @@ def test_update_model_for_new_user():
 
 def test_update_model_for_new_item():
     user_items = sps.csc_matrix([[1, 0, 0, 2], [1, 1, 0, 0], [0, 0, 1, 2]])
-    model = ElementwiseAlternatingLeastSquares(max_iter=1)
+    model = ElementwiseAlternatingLeastSquares(num_iter=1)
     model.fit(user_items)
     model.update_model(2, 4)
     assert model.user_factors().shape[0] == 3
@@ -187,7 +187,7 @@ def test_update_model_for_new_item():
 
 def test_update_model_for_new_user_and_item():
     user_items = sps.csc_matrix([[1, 0, 0, 2], [1, 1, 0, 0], [0, 0, 1, 2]])
-    model = ElementwiseAlternatingLeastSquares(max_iter=1)
+    model = ElementwiseAlternatingLeastSquares(num_iter=1)
     model.fit(user_items)
     model.update_model(3, 4)
     assert model.user_factors().shape[0] == 103
@@ -199,17 +199,17 @@ def test_calc_loss_csr():
     user_items = sps.csc_matrix([[1.0], [0.0]])
     U0 = np.array([[0.9], [0.5]])
     V0 = np.array([[1.0]])
-    reg = 1
+    regularization = 1
     w0 = 1
     alpha = 1
     Wi = 1
-    model = ElementwiseAlternatingLeastSquares(reg=reg, w0=w0, alpha=alpha, factors=U0.shape[1])
+    model = ElementwiseAlternatingLeastSquares(regularization=regularization, w0=w0, alpha=alpha, factors=U0.shape[1])
     model.init_data(user_items, U0, V0)
 
-    l_reg = reg * ((U0 ** 2).sum() + (V0 ** 2).sum())  # regularization term
+    l_regularization = regularization * ((U0 ** 2).sum() + (V0 ** 2).sum())  # regularization term
     l_user0 = (user_items[0, 0] - U0[0] @ V0[0]) ** 2  # usual loss term
     l_user1 = Wi * (U0[1] @ V0[0]) ** 2  # missing data term
-    loss_expected = l_reg + l_user0 + l_user1
+    loss_expected = l_regularization + l_user0 + l_user1
     assert np.allclose(model.calc_loss(), loss_expected)
 
 
@@ -218,18 +218,18 @@ def test_calc_loss_lil():
     user_items = sps.csc_matrix([[1.0], [0.0]])
     U0 = np.array([[0.9], [0.5]])
     V0 = np.array([[1.0]])
-    reg = 1
+    regularization = 1
     w0 = 1
     alpha = 1
     Wi = 1
-    model = ElementwiseAlternatingLeastSquares(reg=reg, w0=w0, alpha=alpha, factors=U0.shape[1])
+    model = ElementwiseAlternatingLeastSquares(regularization=regularization, w0=w0, alpha=alpha, factors=U0.shape[1])
     model.init_data(user_items, U0, V0)
     model._convert_data_for_online_training()
 
-    l_reg = reg * ((U0 ** 2).sum() + (V0 ** 2).sum())  # regularization term
+    l_regularization = regularization * ((U0 ** 2).sum() + (V0 ** 2).sum())  # regularization term
     l_user0 = (user_items[0, 0] - U0[0] @ V0[0]) ** 2  # usual loss term
     l_user1 = Wi * (U0[1] @ V0[0]) ** 2  # missing data term
-    loss_expected = l_reg + l_user0 + l_user1
+    loss_expected = l_regularization + l_user0 + l_user1
     assert np.allclose(model.calc_loss(), loss_expected)
 
 
@@ -240,12 +240,12 @@ def test_save_and_load_model(tmp_path):
         factors=64,
         w0=10,
         alpha=0.75,
-        reg=0.01,
+        regularization=0.01,
         init_mean=0,
         init_stdev=0.01,
         dtype=np.float32,
-        max_iter=1,
-        max_iter_online=1,
+        num_iter=1,
+        num_iter_online=1,
         random_state=None,
         show_loss=False,
     )
