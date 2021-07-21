@@ -35,24 +35,24 @@ class ElementwiseAlternatingLeastSquares:
         factors: int = 64,  # dimension of latent vectors
         w0: float = 10,  # overall weight of missing data
         alpha: float = 0.75,  # control parameter for significance level of popular items
-        reg: float = 0.01,  # regularization parameter lambda
+        regularization: float = 0.01,  # regularization parameter lambda
         init_mean: float = 0,  # mean of initial lantent vectors
         init_stdev: float = 0.01,  # stdev of initial lantent vectors
         dtype=np.float32,
-        max_iter: int = 500,
-        max_iter_online: int = 1,
+        num_iter: int = 500,
+        num_iter_online: int = 1,
         random_state: Optional[int] = None,
         show_loss: bool = False,
     ):
         self.factors = factors
         self.w0 = w0
         self.alpha = alpha
-        self.reg = reg
+        self.regularization = regularization
         self.init_mean = init_mean
         self.init_stdev = init_stdev
         self.dtype = dtype
-        self.max_iter = max_iter
-        self.max_iter_online = max_iter_online
+        self.num_iter = num_iter
+        self.num_iter_online = num_iter_online
         self.random_state = random_state
         self.show_loss = show_loss
 
@@ -74,7 +74,7 @@ class ElementwiseAlternatingLeastSquares:
         self.init_data(user_items, U0, V0)
 
         timer = Timer()
-        for iter in range(self.max_iter):
+        for iter in range(self.num_iter):
             self.update_user_and_SU_all()
             if self.show_loss:
                 self.print_loss(iter, "update_user", timer.elapsed())
@@ -186,7 +186,7 @@ class ElementwiseAlternatingLeastSquares:
             np.array(self.W_lil.data[u], dtype=np.float32),
             self.Wi,
             self.factors,
-            self.reg,
+            self.regularization,
         )
         return old_user_vec
 
@@ -207,7 +207,7 @@ class ElementwiseAlternatingLeastSquares:
             self.W.data,
             self.Wi,
             self.factors,
-            self.reg,
+            self.regularization,
             self.user_count,
         )
 
@@ -225,7 +225,7 @@ class ElementwiseAlternatingLeastSquares:
             np.array(self.W_lil_t.data[i], dtype=np.float32),
             self.Wi,
             self.factors,
-            self.reg,
+            self.regularization,
         )
         return old_item_vec
 
@@ -246,7 +246,7 @@ class ElementwiseAlternatingLeastSquares:
             self.W_csc.data,
             self.Wi,
             self.factors,
-            self.reg,
+            self.regularization,
             self.item_count,
         )
 
@@ -303,7 +303,7 @@ class ElementwiseAlternatingLeastSquares:
                     self.SV[f, k] = val
                     self.SV[k, f] = val
 
-        for _ in range(self.max_iter_online):
+        for _ in range(self.num_iter_online):
             old_user_vec = self.update_user(u)
             self.update_SU(u, old_user_vec)
             old_item_vec = self.update_item(i)
@@ -329,7 +329,7 @@ class ElementwiseAlternatingLeastSquares:
                 self.W.data,
                 self.Wi,
                 self.user_count,
-                self.reg,
+                self.regularization,
             )
         elif self._training_mode == "online":
             loss = _calc_loss_lil(
@@ -342,7 +342,7 @@ class ElementwiseAlternatingLeastSquares:
                 self.Wi,
                 self.user_count,
                 self.item_count,
-                self.reg,
+                self.regularization,
             )
         else:
             raise NotImplementedError(
@@ -372,7 +372,7 @@ def load_model(file: Union[Path, str]) -> ElementwiseAlternatingLeastSquares:
 
 # @njit("(i8,i4[:],f4[:],f8[:,:],f8[:,:],f8[:,:],f4[:],f8[:],i8,f8)")
 @njit()
-def _update_user(u, item_inds, item_ratings, U, V, SV, w_items, Wi, factors, reg):
+def _update_user(u, item_inds, item_ratings, U, V, SV, w_items, Wi, factors, regularization):
     # Matrix U will be modified. Other arguments are read-only.
     if len(item_inds) == 0:
         return
@@ -387,7 +387,7 @@ def _update_user(u, item_inds, item_ratings, U, V, SV, w_items, Wi, factors, reg
             if k != f:
                 numer -= U[u, k] * SV[f, k]
 
-        denom = SV[f, f] + reg
+        denom = SV[f, f] + regularization
         for i in range(len(item_inds)):
             pred_items[i] -= V_items[i, f] * U[u, f]
             numer += (w_item_ratings[i] - w_diff[i] * pred_items[i]) * V_items[i, f]
@@ -409,21 +409,21 @@ def _update_SU(SU, old_user_vec, new_user_vec):
     parallel=_USE_NUMBA_PARALLEL,
 )
 def _update_user_and_SU_all(
-    indptr, indices, data, U, V, SU, SV, w_indptr, w_data, Wi, factors, reg, user_count
+    indptr, indices, data, U, V, SU, SV, w_indptr, w_data, Wi, factors, regularization, user_count
 ):
     # U and SU will be modified. Other arguments are read-only.
     for u in prange(user_count):
         item_inds = indices[indptr[u] : indptr[u + 1]]
         item_ratings = data[indptr[u] : indptr[u + 1]]
         w_items = w_data[w_indptr[u] : w_indptr[u + 1]]
-        _update_user(u, item_inds, item_ratings, U, V, SV, w_items, Wi, factors, reg)
+        _update_user(u, item_inds, item_ratings, U, V, SV, w_items, Wi, factors, regularization)
     # in-place assignment
     SU[:] = U.T @ U
 
 
 # @njit("(i8,i4[:],f4[:],f8[:,:],f8[:,:],f8[:,:],f4[:],f8[:],i8,f8)")
 @njit()
-def _update_item(i, user_inds, user_ratings, U, V, SU, w_users, Wi, factors, reg):
+def _update_item(i, user_inds, user_ratings, U, V, SU, w_users, Wi, factors, regularization):
     # Matrix V will be modified. Other arguments are read-only.
     if len(user_inds) == 0:
         return
@@ -439,7 +439,7 @@ def _update_item(i, user_inds, user_ratings, U, V, SU, w_users, Wi, factors, reg
                 numer -= V[i, k] * SU[f, k]
         numer *= Wi[i]
 
-        denom = SU[f, f] * Wi[i] + reg
+        denom = SU[f, f] * Wi[i] + regularization
         for u in range(len(user_inds)):
             pred_users[u] -= U_users[u, f] * V[i, f]
             numer += (w_users_rating[u] - w_diff[u] * pred_users[u]) * U_users[u, f]
@@ -461,22 +461,22 @@ def _update_SV(SV, old_item_vec, new_item_vec, Wii):
     parallel=_USE_NUMBA_PARALLEL,
 )
 def _update_item_and_SV_all(
-    indptr, indices, data, U, V, SU, SV, w_indptr, w_data, Wi, factors, reg, item_count
+    indptr, indices, data, U, V, SU, SV, w_indptr, w_data, Wi, factors, regularization, item_count
 ):
     # V and SV will be modified. Other arguments are read-only.
     for i in prange(item_count):
         user_inds = indices[indptr[i] : indptr[i + 1]]
         user_ratings = data[indptr[i] : indptr[i + 1]]
         w_users = w_data[w_indptr[i] : w_indptr[i + 1]]
-        _update_item(i, user_inds, user_ratings, U, V, SU, w_users, Wi, factors, reg)
+        _update_item(i, user_inds, user_ratings, U, V, SU, w_users, Wi, factors, regularization)
     SV[:] = (V.T * Wi) @ V  # in-place assignment
 
 
 # NOTE: なぜか型指定すると遅くなる。_calc_loss_lil()も同様
 # @njit("(i4[:],i4[:],f4[:],f8[:,:],f8[:,:],f8[:,:],i4[:],f4[:],f8[:],i8,f8)")
 @njit()
-def _calc_loss_csr(indptr, indices, data, U, V, SV, w_indptr, w_data, Wi, user_count, reg):
-    loss = ((U ** 2).sum() + (V ** 2).sum()) * reg
+def _calc_loss_csr(indptr, indices, data, U, V, SV, w_indptr, w_data, Wi, user_count, regularization):
+    loss = ((U ** 2).sum() + (V ** 2).sum()) * regularization
     for u in range(user_count):
         item_indices = indices[indptr[u] : indptr[u + 1]]
         ratings = data[indptr[u] : indptr[u + 1]]
@@ -493,8 +493,8 @@ def _calc_loss_csr(indptr, indices, data, U, V, SV, w_indptr, w_data, Wi, user_c
 
 # @njit("f8(f8[:,:],f8[:,:],f8[:,:],i8,f8)")
 @njit()
-def _calc_loss_lil_init(U, V, SV, user_count, reg):
-    loss = ((U ** 2).sum() + (V ** 2).sum()) * reg
+def _calc_loss_lil_init(U, V, SV, user_count, regularization):
+    loss = ((U ** 2).sum() + (V ** 2).sum()) * regularization
     for u in range(user_count):
         loss += SV @ U[u] @ U[u]
     return loss
@@ -512,8 +512,8 @@ def _calc_loss_lil_inner_loop(i, indices, ratings, weights, U, V, Wi):
 
 
 # NOTE: rowsとdataがarray of listsなのでこの関数は@njitしても速くならない
-def _calc_loss_lil(cols, data, U, V, SV, w_t_data, Wi, user_count, item_count, reg):
-    loss = _calc_loss_lil_init(U, V, SV, user_count, reg)
+def _calc_loss_lil(cols, data, U, V, SV, w_t_data, Wi, user_count, item_count, regularization):
+    loss = _calc_loss_lil_init(U, V, SV, user_count, regularization)
     for i in range(item_count):
         if not cols[i]:
             continue
