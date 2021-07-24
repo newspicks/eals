@@ -309,7 +309,8 @@ class ElementwiseAlternatingLeastSquares:
         i: int
             Item index
         show_loss: bool
-            Whether to compute and print the loss after each iteration
+            Whether to compute and print the loss after each iteration.
+            Enabling this option may slow down training.
         """
         timer = Timer()
         self._convert_data_for_online_training()
