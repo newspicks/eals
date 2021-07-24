@@ -162,8 +162,8 @@ def test_fit_no_iteration(mock_init_V, mock_init_U):
     U0 = V0 = np.array([[0.5, 0.1, 0.2], [0.7, 0.8, 0.9]])
     mock_init_U.return_value = U0
     mock_init_V.return_value = V0
-    # Nothing happens if max_iter=0
-    model = ElementwiseAlternatingLeastSquares(max_iter=0, factors=U0.shape[1])
+    # Nothing happens if num_iter=0
+    model = ElementwiseAlternatingLeastSquares(num_iter=0, factors=U0.shape[1])
     model.fit(user_items)
     assert np.allclose(model.U, U0)
     assert np.allclose(model.V, V0)
@@ -176,8 +176,8 @@ def test_fit_one_iteration(mock_init_V, mock_init_U):
     U0 = V0 = np.array([[0.5, 0.1, 0.2], [0.7, 0.8, 0.9]])
     mock_init_U.return_value = U0
     mock_init_V.return_value = V0
-    # (fit with max_iter=1) == init_data + update_user_and_SU_all + update_item_and_SV_all
-    model_actual = ElementwiseAlternatingLeastSquares(max_iter=1, factors=U0.shape[1])
+    # (fit with num_iter=1) == init_data + update_user_and_SU_all + update_item_and_SV_all
+    model_actual = ElementwiseAlternatingLeastSquares(num_iter=1, factors=U0.shape[1])
     model_actual.fit(user_items)
     model_expected = ElementwiseAlternatingLeastSquares(factors=U0.shape[1])
     model_expected.init_data(user_items)
