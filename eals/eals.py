@@ -1,7 +1,7 @@
 import os
 from distutils.util import strtobool
-from typing import Optional, Union
 from pathlib import Path
+from typing import Optional, Union
 
 import numpy as np
 import scipy.sparse as sps
@@ -20,7 +20,8 @@ else:
 
         return nojit
 
-from .serializer import serialize_eals_joblib, deserialize_eals_joblib
+
+from .serializer import deserialize_eals_joblib, serialize_eals_joblib
 from .util import Timer
 
 
@@ -58,20 +59,13 @@ class ElementwiseAlternatingLeastSquares:
 
         self._training_mode = "batch"  # "batch" (use csr/csc matrix) or "online" (use lil matrix)
 
-    def fit(
-        self,
-        user_items: sps.spmatrix,
-        U0: Optional[np.ndarray] = None,
-        V0: Optional[np.ndarray] = None,
-    ):
+    def fit(self, user_items: sps.spmatrix):
         """バッチ行列分解
 
         Args:
             user_items: Rating matrix
-            U0: Initial values of user vectors
-            V0: Initial values of item vectors
         """
-        self.init_data(user_items, U0, V0)
+        self.init_data(user_items)
 
         timer = Timer()
         for iter in range(self.num_iter):
@@ -84,17 +78,8 @@ class ElementwiseAlternatingLeastSquares:
 
         self._convert_data_for_online_training()
 
-    def init_data(
-        self,
-        user_items: sps.spmatrix,
-        U0: Optional[np.ndarray] = None,
-        V0: Optional[np.ndarray] = None,
-    ):
+    def init_data(self, user_items: sps.spmatrix):
         """バッチ行列分解時のデータ初期化"""
-        if U0 is not None and self.factors != U0.shape[1]:
-            raise ValueError("U0.shape[1] must be equal to self.factors")
-        if V0 is not None and self.factors != V0.shape[1]:
-            raise ValueError("V0.shape[1] must be equal to self.factors")
 
         # item_usersがnp.float32のcsr_matrixでなければ変換
         if not isinstance(user_items, sps.csr_matrix):
@@ -125,20 +110,18 @@ class ElementwiseAlternatingLeastSquares:
 
         if self.random_state is not None:
             np.random.seed(self.random_state)
-        self.U = (
-            U0
-            if U0 is not None
-            else np.random.normal(self.init_mean, self.init_stdev, (self.user_count, self.factors))
-        )
-        self.V: np.ndarray = (
-            V0
-            if V0 is not None
-            else np.random.normal(self.init_mean, self.init_stdev, (self.item_count, self.factors))
-        )
+        self.U = self._init_U()
+        self.V = self._init_V()
         self.SU = self.U.T @ self.U
         self.SV = (self.V.T * self.Wi) @ self.V
 
         self._training_mode = "batch"
+
+    def _init_U(self):
+        return np.random.normal(self.init_mean, self.init_stdev, (self.user_count, self.factors))
+
+    def _init_V(self):
+        return np.random.normal(self.init_mean, self.init_stdev, (self.item_count, self.factors))
 
     def _convert_data_for_online_training(self):
         # update_model()等のためにlil_matrixに変換
