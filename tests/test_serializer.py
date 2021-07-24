@@ -3,7 +3,7 @@ import filecmp
 import numpy as np
 import scipy.sparse as sps
 
-from eals.eals import ElementwiseAlternatingLeastSquares
+from eals import ElementwiseAlternatingLeastSquares
 from eals.serializer import deserialize_eals_joblib, serialize_eals_joblib
 
 

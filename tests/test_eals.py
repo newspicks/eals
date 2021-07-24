@@ -3,7 +3,7 @@ from unittest import mock
 import numpy as np
 import scipy.sparse as sps
 
-from eals.eals import ElementwiseAlternatingLeastSquares, load_model
+from eals import ElementwiseAlternatingLeastSquares, load_model
 
 
 def assert_model_equality(model1, model2):
