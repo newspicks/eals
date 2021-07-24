@@ -87,8 +87,8 @@ class ElementwiseAlternatingLeastSquares:
 
         self._training_mode = "batch"  # "batch" (use csr/csc matrix) or "online" (use lil matrix)
 
-    def fit(self, user_items: sps.spmatrix, show_loss: bool = False):
-        """Fit the model to the given rating data in batch mode
+    def fit(self, user_items: sps.spmatrix, show_loss: bool = False, postprocess: bool = True):
+        """Fit the model to the given rating data from scratch
 
         Parameters
         ----------
@@ -96,6 +96,10 @@ class ElementwiseAlternatingLeastSquares:
             Rating matrix for user-item pairs
         show_loss: bool
             Whether to compute and print the loss after each iteration
+        postprocess: bool
+            If True, change the format of the rating matrix from CSR to LIL
+            in order to update_model() after fit().
+            This postprocessing may add some performance overhead for large data.
         """
         self.init_data(user_items)
 
@@ -108,7 +112,8 @@ class ElementwiseAlternatingLeastSquares:
             if show_loss:
                 self.print_loss(iter, "update_item", timer.elapsed())
 
-        self._convert_data_for_online_training()
+        if postprocess:
+            self._convert_data_for_online_training()
 
     def init_data(self, user_items: sps.spmatrix):
         """Initialize parameters and hyperparameters before batch training
