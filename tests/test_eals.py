@@ -16,7 +16,6 @@ def assert_model_equality(model1, model2):
     assert model1.num_iter == model2.num_iter
     assert model1.num_iter_online == model2.num_iter_online
     assert model1.random_state == model2.random_state
-    assert model1.show_loss == model2.show_loss
     assert np.allclose(model1.U, model2.U)
     assert np.allclose(model1.V, model2.V)
     assert (model1.user_items_lil.data == model2.user_items_lil.data).all()
@@ -287,7 +286,6 @@ def test_save_and_load_model(tmp_path):
         num_iter=1,
         num_iter_online=1,
         random_state=None,
-        show_loss=False,
     )
     model.fit(user_items)
     # test .joblib without compression

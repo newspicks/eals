@@ -48,8 +48,6 @@ class ElementwiseAlternatingLeastSquares:
         The number of iterations for online training
     random_state: int
         Numpy random seed
-    show_loss: bool
-        Whether to print loss values during training
 
     Attributes
     ----------
@@ -76,7 +74,6 @@ class ElementwiseAlternatingLeastSquares:
         num_iter: int = 500,
         num_iter_online: int = 1,
         random_state: Optional[int] = None,
-        show_loss: bool = False,
     ):
         self.factors = factors
         self.w0 = w0
@@ -87,27 +84,28 @@ class ElementwiseAlternatingLeastSquares:
         self.num_iter = num_iter
         self.num_iter_online = num_iter_online
         self.random_state = random_state
-        self.show_loss = show_loss
 
         self._training_mode = "batch"  # "batch" (use csr/csc matrix) or "online" (use lil matrix)
 
-    def fit(self, user_items: sps.spmatrix):
+    def fit(self, user_items: sps.spmatrix, show_loss: bool = False):
         """Fit the model to the given rating data in batch mode
 
         Parameters
         ----------
         user_items: scipy.sparse.spmatrix
-            rating matrix for user-item pairs
+            Rating matrix for user-item pairs
+        show_loss: bool
+            Whether to compute and print the loss after each iteration
         """
         self.init_data(user_items)
 
         timer = Timer()
         for iter in range(self.num_iter):
             self.update_user_and_SU_all()
-            if self.show_loss:
+            if show_loss:
                 self.print_loss(iter, "update_user", timer.elapsed())
             self.update_item_and_SV_all()
-            if self.show_loss:
+            if show_loss:
                 self.print_loss(iter, "update_item", timer.elapsed())
 
         self._convert_data_for_online_training()
@@ -301,7 +299,7 @@ class ElementwiseAlternatingLeastSquares:
         self.user_count = new_user_count
         self.item_count = new_item_count
 
-    def update_model(self, u, i):
+    def update_model(self, u, i, show_loss: bool = False):
         """Update the model for single, possibly new user-item pair
 
         Parameters
@@ -310,6 +308,8 @@ class ElementwiseAlternatingLeastSquares:
             User index
         i: int
             Item index
+        show_loss: bool
+            Whether to compute and print the loss after each iteration
         """
         timer = Timer()
         self._convert_data_for_online_training()
@@ -334,7 +334,7 @@ class ElementwiseAlternatingLeastSquares:
             old_item_vec = self.update_item(i)
             self.update_SV(i, old_item_vec)
 
-        if self.show_loss:
+        if show_loss:
             self.print_loss(1, "update_model", timer.elapsed())
 
     def print_loss(self, iter, message, elapsed):
