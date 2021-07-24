@@ -21,7 +21,7 @@ from zipfile import ZipFile
 import numpy as np
 import scipy.sparse as sps
 
-from eals.eals import ElementwiseAlternatingLeastSquares, load_model
+from eals import ElementwiseAlternatingLeastSquares, load_model
 
 DATA_URL = "https://files.grouplens.org/datasets/movielens/ml-20m.zip"
 BASE_DIR = os.path.dirname(__file__)
