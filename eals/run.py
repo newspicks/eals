@@ -14,16 +14,16 @@ from .util import create_user_items
 def main(max_iter):
     batch_user_items, online_user_items = create_user_items1()
     model = ElementwiseAlternatingLeastSquares(
-        random_state=8, show_loss=True, max_iter=max_iter
+        random_state=8, num_iter=max_iter
     )
-    model.fit(batch_user_items)
+    model.fit(batch_user_items, show_loss=True)
     for vec in model.user_factors[:3]:
         print(f"user: {vec}")
     for vec in model.item_factors[:3]:
         print(f"item: {vec}")
     for i in range(online_user_items.shape[0]):
         for j in online_user_items.indices[online_user_items.indptr[i] : online_user_items.indptr[i + 1]]:
-            model.update_model(i, j)
+            model.update_model(i, j, show_loss=True)
 
 def create_user_items1():
     batch_user_items = create_user_items(
