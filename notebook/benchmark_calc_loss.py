@@ -2,8 +2,9 @@ import json
 import os
 import time
 import warnings
+
 os.environ["USE_NUMBA"] = "1"
-warnings.simplefilter('ignore')
+warnings.simplefilter("ignore")
 
 import click
 import numpy as np
@@ -42,7 +43,9 @@ def bench_real_data(file, mat_type):
     nnz = len(d)
     new_user_count = int(user_count / 100)
     new_item_count = int(item_count / 100)
-    train_data = sps.csr_matrix((d, (u, i)), shape=(user_count + new_user_count, item_count + new_item_count))
+    train_data = sps.csr_matrix(
+        (d, (u, i)), shape=(user_count + new_user_count, item_count + new_item_count)
+    )
     del u, i, d
     print(f"{time.time() - t} sec")
     print(f"    {user_count=}, {item_count=}, {nnz=}")
@@ -65,7 +68,12 @@ def bench_real_data(file, mat_type):
 
 def bench_random_data(mat_type):
     print(f"random data, {mat_type} matrix")
-    for user_count, item_count in [(2000, 1000), (20000, 10000), (200000, 100000), (2000000, 1000000)]: 
+    for user_count, item_count in [
+        (2000, 1000),
+        (20000, 10000),
+        (200000, 100000),
+        (2000000, 1000000),
+    ]:
         print("  create data: ", end="")
         t = time.time()
         data_count = user_count * 20

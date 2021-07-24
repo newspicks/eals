@@ -51,7 +51,11 @@ def test_serialize_and_deserialize(tmp_path):
     model_actual = deserialize_eals_joblib(file_joblib)
     assert_model_equality(model, model_actual)
 
-    assert filecmp.cmp(tmp_path / "model_compress-0.joblib", tmp_path / "model_compress-false.joblib", shallow=False)
+    assert filecmp.cmp(
+        tmp_path / "model_compress-0.joblib",
+        tmp_path / "model_compress-false.joblib",
+        shallow=False,
+    )
 
     # Test .joblib with compression.
     # compress=3 and compress=True give the same result.
@@ -65,4 +69,8 @@ def test_serialize_and_deserialize(tmp_path):
     model_actual = deserialize_eals_joblib(file_joblib)
     assert_model_equality(model, model_actual)
 
-    assert filecmp.cmp(tmp_path / "model_compress-3.joblib", tmp_path / "model_compress-true.joblib", shallow=False)
+    assert filecmp.cmp(
+        tmp_path / "model_compress-3.joblib",
+        tmp_path / "model_compress-true.joblib",
+        shallow=False,
+    )

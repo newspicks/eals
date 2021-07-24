@@ -116,8 +116,7 @@ class ElementwiseAlternatingLeastSquares:
             self._convert_data_for_online_training()
 
     def init_data(self, user_items: sps.spmatrix):
-        """Initialize parameters and hyperparameters before batch training
-        """
+        """Initialize parameters and hyperparameters before batch training"""
         # coerce user_items to csr matrix with float32 type
         if not isinstance(user_items, sps.csr_matrix):
             print("converting user_items to CSR matrix")
@@ -409,6 +408,7 @@ def load_model(file: Union[Path, str]) -> ElementwiseAlternatingLeastSquares:
 
 # Actual implementation of eALS with numba jit
 
+
 @njit(
     # TODO: Explicit type annotations slow down computation. Why?
     # "(i8,i4[:],f4[:],f8[:,:],f8[:,:],f8[:,:],f4[:],f8[:],i8,f8)"
@@ -517,7 +517,9 @@ def _update_item_and_SV_all(
 @njit(
     # "(i4[:],i4[:],f4[:],f8[:,:],f8[:,:],f8[:,:],i4[:],f4[:],f8[:],i8,f8)"
 )
-def _calc_loss_csr(indptr, indices, data, U, V, SV, w_indptr, w_data, Wi, user_count, regularization):
+def _calc_loss_csr(
+    indptr, indices, data, U, V, SV, w_indptr, w_data, Wi, user_count, regularization
+):
     loss = ((U ** 2).sum() + (V ** 2).sum()) * regularization
     for u in range(user_count):
         item_indices = indices[indptr[u] : indptr[u + 1]]

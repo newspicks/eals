@@ -239,7 +239,9 @@ def test_calc_loss_csr(mock_init_V, mock_init_U):
     w0 = 1
     alpha = 1
     Wi = 1
-    model = ElementwiseAlternatingLeastSquares(regularization=regularization, w0=w0, alpha=alpha, factors=U0.shape[1])
+    model = ElementwiseAlternatingLeastSquares(
+        regularization=regularization, w0=w0, alpha=alpha, factors=U0.shape[1]
+    )
     model.init_data(user_items)
 
     l_regularization = regularization * ((U0 ** 2).sum() + (V0 ** 2).sum())  # regularization term
@@ -262,7 +264,9 @@ def test_calc_loss_lil(mock_init_V, mock_init_U):
     w0 = 1
     alpha = 1
     Wi = 1
-    model = ElementwiseAlternatingLeastSquares(regularization=regularization, w0=w0, alpha=alpha, factors=U0.shape[1])
+    model = ElementwiseAlternatingLeastSquares(
+        regularization=regularization, w0=w0, alpha=alpha, factors=U0.shape[1]
+    )
     model.init_data(user_items)
     model._convert_data_for_online_training()
 

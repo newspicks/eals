@@ -1,6 +1,7 @@
+import datetime
+
 import numpy as np
 import scipy.sparse as sps
-import datetime
 
 
 def create_user_items(
@@ -35,14 +36,13 @@ def create_user_items(
 
 
 class Timer:
-    """Measure elapsed time
-    """
+    """Measure elapsed time"""
+
     def __init__(self):
         self.start_time = datetime.datetime.now()
 
     def elapsed(self):
-        """Returns the elapsed time since the last call
-        """
+        """Returns the elapsed time since the last call"""
         end_time = datetime.datetime.now()
         elapsed_time = end_time - self.start_time
         self.start_time = end_time
