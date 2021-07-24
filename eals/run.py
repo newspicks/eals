@@ -17,9 +17,9 @@ def main(max_iter):
         random_state=8, show_loss=True, max_iter=max_iter
     )
     model.fit(batch_user_items)
-    for vec in model.user_factors()[:3]:
+    for vec in model.user_factors[:3]:
         print(f"user: {vec}")
-    for vec in model.item_factors()[:3]:
+    for vec in model.item_factors[:3]:
         print(f"item: {vec}")
     for i in range(online_user_items.shape[0]):
         for j in online_user_items.indices[online_user_items.indptr[i] : online_user_items.indptr[i + 1]]:
