@@ -11,12 +11,12 @@ def assert_model_equality(model1, model2):
     assert model1.factors == model2.factors
     assert model1.w0 == model2.w0
     assert model1.alpha == model2.alpha
-    assert model1.reg == model2.reg
+    assert model1.regularization == model2.regularization
     assert model1.init_mean == model2.init_mean
     assert model1.init_stdev == model2.init_stdev
     assert model1.dtype == model2.dtype
-    assert model1.max_iter == model2.max_iter
-    assert model1.max_iter_online == model2.max_iter_online
+    assert model1.num_iter == model2.num_iter
+    assert model1.num_iter_online == model2.num_iter_online
     assert model1.random_state == model2.random_state
     assert model1.show_loss == model2.show_loss
     assert np.allclose(model1.U, model2.U)
@@ -32,12 +32,12 @@ def test_serialize_and_deserialize(tmp_path):
         factors=64,
         w0=10,
         alpha=0.75,
-        reg=0.01,
+        regularization=0.01,
         init_mean=0,
         init_stdev=0.01,
         dtype=np.float32,
-        max_iter=1,
-        max_iter_online=1,
+        num_iter=1,
+        num_iter_online=1,
         random_state=None,
         show_loss=False,
     )
