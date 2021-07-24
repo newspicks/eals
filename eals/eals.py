@@ -26,20 +26,53 @@ from .util import Timer
 
 
 class ElementwiseAlternatingLeastSquares:
-    """
-    element-wise Alternating Least Squares
-    cf. https://github.com/hexiangnan/sigir16-eals/blob/master/src/algorithms/MF_fastALS.java
+    """Element-wise Alternating Least Squares (eALS)
+
+    Parameters
+    ----------
+    factors: int
+        Dimension of latent vectors
+    w0: float
+        Overall weight of missing data
+    alpha: float
+        Control parameter for significance level of popular items
+    regularization: float
+        Regularization parameter lambda
+    init_mean: float
+        Mean of initial latent vectors
+    init_stdev: float
+        Standard deviation of initial latent vectors
+    num_iter: int
+        The number of iterations for batch training
+    num_iter_online: int
+        The number of iterations for online training
+    random_state: int
+        Numpy random seed
+    show_loss: bool
+        Whether to print loss values during training
+
+    Attributes
+    ----------
+    user_factors: numpy.ndarray
+        Latent vectors for users
+    item_factors: numpy.ndarray
+        Latent vectors for items
+
+    Notes
+    ----------
+    Original eALS paper and Java inplementation
+    - https://arxiv.org/abs/1708.05024
+    - https://github.com/hexiangnan/sigir16-eals
     """
 
     def __init__(
         self,
-        factors: int = 64,  # dimension of latent vectors
-        w0: float = 10,  # overall weight of missing data
-        alpha: float = 0.75,  # control parameter for significance level of popular items
-        regularization: float = 0.01,  # regularization parameter lambda
-        init_mean: float = 0,  # mean of initial lantent vectors
-        init_stdev: float = 0.01,  # stdev of initial lantent vectors
-        dtype=np.float32,
+        factors: int = 64,
+        w0: float = 10,
+        alpha: float = 0.75,
+        regularization: float = 0.01,
+        init_mean: float = 0,
+        init_stdev: float = 0.01,
         num_iter: int = 500,
         num_iter_online: int = 1,
         random_state: Optional[int] = None,
@@ -51,7 +84,6 @@ class ElementwiseAlternatingLeastSquares:
         self.regularization = regularization
         self.init_mean = init_mean
         self.init_stdev = init_stdev
-        self.dtype = dtype
         self.num_iter = num_iter
         self.num_iter_online = num_iter_online
         self.random_state = random_state
@@ -60,10 +92,12 @@ class ElementwiseAlternatingLeastSquares:
         self._training_mode = "batch"  # "batch" (use csr/csc matrix) or "online" (use lil matrix)
 
     def fit(self, user_items: sps.spmatrix):
-        """バッチ行列分解
+        """Fit the model to the given rating data in batch mode
 
-        Args:
-            user_items: Rating matrix
+        Parameters
+        ----------
+        user_items: scipy.sparse.spmatrix
+            rating matrix for user-item pairs
         """
         self.init_data(user_items)
 
@@ -79,9 +113,9 @@ class ElementwiseAlternatingLeastSquares:
         self._convert_data_for_online_training()
 
     def init_data(self, user_items: sps.spmatrix):
-        """バッチ行列分解時のデータ初期化"""
-
-        # item_usersがnp.float32のcsr_matrixでなければ変換
+        """Initialize parameters and hyperparameters before batch training
+        """
+        # coerce user_items to csr matrix with float32 type
         if not isinstance(user_items, sps.csr_matrix):
             print("converting user_items to CSR matrix")
             user_items = user_items.tocsr()
@@ -98,11 +132,13 @@ class ElementwiseAlternatingLeastSquares:
             p / p.sum() * self.w0
         )  # confidence that item i missed by users is a true negative assessment
 
-        self.W = self.user_items.copy()  # weights for squared errors of ratings
-        self.W.data = np.ones(len(self.W.data)).astype(np.float32)  # TODO: 全部1でいいのか？
+        # weights for squared errors of ratings
+        # NOTE: Elements of W are fixed to be 1 as in the original implementation
+        self.W = self.user_items.copy()
+        self.W.data = np.ones(len(self.W.data)).astype(np.float32)
         self.W_csc = self.W.tocsc()
 
-        # オンライン学習用データ＆ウェイト（実際の初期化はオンライン学習開始時に行う）
+        # data and weights for online training
         self.user_items_lil = sps.lil_matrix((0, 0))
         self.user_items_lil_t = sps.lil_matrix((0, 0))
         self.W_lil = sps.lil_matrix((0, 0))
@@ -124,7 +160,7 @@ class ElementwiseAlternatingLeastSquares:
         return np.random.normal(self.init_mean, self.init_stdev, (self.item_count, self.factors))
 
     def _convert_data_for_online_training(self):
-        # update_model()等のためにlil_matrixに変換
+        # convert matrices to lil for online training
         if self._training_mode != "online":
             self.user_items_lil = self.user_items.tolil()
             self.user_items_lil_t = self.user_items_lil.T
@@ -137,7 +173,7 @@ class ElementwiseAlternatingLeastSquares:
             self._training_mode = "online"
 
     def _convert_data_for_batch_training(self):
-        # update_user_and_SU_all()等のためにcsr/csc matrixに変換
+        # convert matrices to csr for batch training
         if self._training_mode != "batch":
             self.user_items = self.user_items_lil.tocsr()
             self.user_items_csc = self.user_items.tocsc()
@@ -149,14 +185,16 @@ class ElementwiseAlternatingLeastSquares:
             del self.W_lil_t
             self._training_mode = "batch"
 
+    @property
     def user_factors(self):
         return self.U
 
+    @property
     def item_factors(self):
         return self.V
 
     def update_user(self, u):
-        """ユーザーベクトルの更新"""
+        """Update the user latent vector"""
         self._convert_data_for_online_training()
         old_user_vec = self.U[[u]]
         _update_user(
@@ -195,7 +233,7 @@ class ElementwiseAlternatingLeastSquares:
         )
 
     def update_item(self, i):
-        """アイテムベクトルの更新"""
+        """Update the item latent vector"""
         self._convert_data_for_online_training()
         old_item_vec = self.V[[i]]
         _update_item(
@@ -234,7 +272,7 @@ class ElementwiseAlternatingLeastSquares:
         )
 
     def _expand_data(self, u, i):
-        """新規ユーザー、新規アイテムならデータのサイズを拡張する"""
+        """Expand matrices for a new user-item pair if necessary"""
         extra_count = 100
         if u >= self.user_count:
             new_user_count = u + extra_count
@@ -264,21 +302,25 @@ class ElementwiseAlternatingLeastSquares:
         self.item_count = new_item_count
 
     def update_model(self, u, i):
-        """データを1件追加してモデルを更新"""
+        """Update the model for single, possibly new user-item pair
+
+        Parameters
+        ----------
+        u: int
+            User index
+        i: int
+            Item index
+        """
         timer = Timer()
         self._convert_data_for_online_training()
         self._expand_data(u, i)
-        # TODO: 新規ユーザ、新規アイテムに対応できていないのでは？（IndexErrorになるだけ）
-        # あらかじめ将来追加されるのユーザ、アイテムの分まで行列確保しておくのであればこれでもよいが…
         self.user_items_lil[u, i] = 1
         self.user_items_lil_t[i, u] = 1
-        # TODO: 論文だとw_newはハイパーパラメータ
         self.W_lil[u, i] = 1  # w_new
         self.W_lil_t[i, u] = 1  # w_new
+        # a new item
         if self.Wi[i] == 0:
-            # an new item
-            # TODO: この定義はどこから来た？（論文には書いてないような）
-            # 定義の気持ちはわからないでもないが、Wi.sum()がw0にならないのもイヤ
+            # NOTE: This update rule for Wi does not seem to be described in the paper.
             self.Wi[i] = self.w0 / self.item_count
             for f in range(self.factors):
                 for k in range(f + 1):
@@ -334,27 +376,37 @@ class ElementwiseAlternatingLeastSquares:
         return loss
 
     def save(self, file: Union[Path, str], compress: Union[bool, int] = True):
-        """Save the model in joblib format.
+        """Save the model in joblib format
 
-        Args:
-            file: File name or path object
-            compress: Joblib compression level (0-9).
-                False or 0 disables compression. True(default) uses a compression level of 3.
+        Parameters
+        ----------
+        file: Union[pathlib.Path, str]
+            File to save the model
+        compress: Union[bool, int]
+            Joblib compression level (0-9).
+            False or 0 disables compression.
+            True (default) is equal to compression level 3.
         """
         serialize_eals_joblib(file, self, compress=compress)
 
 
 def load_model(file: Union[Path, str]) -> ElementwiseAlternatingLeastSquares:
-    """Load the model from a joblib file.
+    """Load the model from a joblib file
 
-    Args:
-        file: File name or path object
+    Parameters
+    ----------
+    file: Union[pathlib.Path, str]
+        File to load the model from
     """
     return deserialize_eals_joblib(file)
 
 
-# @njit("(i8,i4[:],f4[:],f8[:,:],f8[:,:],f8[:,:],f4[:],f8[:],i8,f8)")
-@njit()
+# Actual implementation of eALS with numba jit
+
+@njit(
+    # TODO: Explicit type annotations slow down computation. Why?
+    # "(i8,i4[:],f4[:],f8[:,:],f8[:,:],f8[:,:],f4[:],f8[:],i8,f8)"
+)
 def _update_user(u, item_inds, item_ratings, U, V, SV, w_items, Wi, factors, regularization):
     # Matrix U will be modified. Other arguments are read-only.
     if len(item_inds) == 0:
@@ -404,8 +456,9 @@ def _update_user_and_SU_all(
     SU[:] = U.T @ U
 
 
-# @njit("(i8,i4[:],f4[:],f8[:,:],f8[:,:],f8[:,:],f4[:],f8[:],i8,f8)")
-@njit()
+@njit(
+    # "(i8,i4[:],f4[:],f8[:,:],f8[:,:],f8[:,:],f4[:],f8[:],i8,f8)"
+)
 def _update_item(i, user_inds, user_ratings, U, V, SU, w_users, Wi, factors, regularization):
     # Matrix V will be modified. Other arguments are read-only.
     if len(user_inds) == 0:
@@ -455,9 +508,9 @@ def _update_item_and_SV_all(
     SV[:] = (V.T * Wi) @ V  # in-place assignment
 
 
-# NOTE: なぜか型指定すると遅くなる。_calc_loss_lil()も同様
-# @njit("(i4[:],i4[:],f4[:],f8[:,:],f8[:,:],f8[:,:],i4[:],f4[:],f8[:],i8,f8)")
-@njit()
+@njit(
+    # "(i4[:],i4[:],f4[:],f8[:,:],f8[:,:],f8[:,:],i4[:],f4[:],f8[:],i8,f8)"
+)
 def _calc_loss_csr(indptr, indices, data, U, V, SV, w_indptr, w_data, Wi, user_count, regularization):
     loss = ((U ** 2).sum() + (V ** 2).sum()) * regularization
     for u in range(user_count):
@@ -474,8 +527,9 @@ def _calc_loss_csr(indptr, indices, data, U, V, SV, w_indptr, w_data, Wi, user_c
     return loss
 
 
-# @njit("f8(f8[:,:],f8[:,:],f8[:,:],i8,f8)")
-@njit()
+@njit(
+    # "f8(f8[:,:],f8[:,:],f8[:,:],i8,f8)"
+)
 def _calc_loss_lil_init(U, V, SV, user_count, regularization):
     loss = ((U ** 2).sum() + (V ** 2).sum()) * regularization
     for u in range(user_count):
@@ -483,8 +537,9 @@ def _calc_loss_lil_init(U, V, SV, user_count, regularization):
     return loss
 
 
-# ("f8(i8,i4[:],f4[:],f4[:],f8[:,:],f8[:,:],f8[:])")
-@njit()
+@njit(
+    # "f8(i8,i4[:],f4[:],f4[:],f8[:,:],f8[:,:],f8[:])"
+)
 def _calc_loss_lil_inner_loop(i, indices, ratings, weights, U, V, Wi):
     l = 0
     for u, w, rating in zip(indices, weights, ratings):
@@ -494,8 +549,8 @@ def _calc_loss_lil_inner_loop(i, indices, ratings, weights, U, V, Wi):
     return l
 
 
-# NOTE: rowsとdataがarray of listsなのでこの関数は@njitしても速くならない
 def _calc_loss_lil(cols, data, U, V, SV, w_t_data, Wi, user_count, item_count, regularization):
+    # TODO: @njit does not improve performance of this function. Better way to implement it?
     loss = _calc_loss_lil_init(U, V, SV, user_count, regularization)
     for i in range(item_count):
         if not cols[i]:

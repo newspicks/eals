@@ -13,7 +13,6 @@ def assert_model_equality(model1, model2):
     assert model1.regularization == model2.regularization
     assert model1.init_mean == model2.init_mean
     assert model1.init_stdev == model2.init_stdev
-    assert model1.dtype == model2.dtype
     assert model1.num_iter == model2.num_iter
     assert model1.num_iter_online == model2.num_iter_online
     assert model1.random_state == model2.random_state
@@ -25,7 +24,7 @@ def assert_model_equality(model1, model2):
 
 
 def test_init_data():
-    # 初期化ロジックがややこしめのインスタンス変数のみテストする
+    # Test initialization for some instance variables
     user_items = sps.csc_matrix([[0, 1], [1, 0]])
     alpha = 0.5
     w0 = 10
@@ -197,8 +196,8 @@ def test_update_model_for_existing_user_and_item():
     model = ElementwiseAlternatingLeastSquares(num_iter=1)
     model.fit(user_items)
     model.update_model(2, 3)
-    assert model.user_factors().shape[0] == 3
-    assert model.item_factors().shape[0] == 4
+    assert model.user_factors.shape[0] == 3
+    assert model.item_factors.shape[0] == 4
 
 
 def test_update_model_for_new_user():
@@ -206,8 +205,8 @@ def test_update_model_for_new_user():
     model = ElementwiseAlternatingLeastSquares(num_iter=1)
     model.fit(user_items)
     model.update_model(3, 3)
-    assert model.user_factors().shape[0] == 103
-    assert model.item_factors().shape[0] == 4
+    assert model.user_factors.shape[0] == 103
+    assert model.item_factors.shape[0] == 4
 
 
 def test_update_model_for_new_item():
@@ -215,8 +214,8 @@ def test_update_model_for_new_item():
     model = ElementwiseAlternatingLeastSquares(num_iter=1)
     model.fit(user_items)
     model.update_model(2, 4)
-    assert model.user_factors().shape[0] == 3
-    assert model.item_factors().shape[0] == 104
+    assert model.user_factors.shape[0] == 3
+    assert model.item_factors.shape[0] == 104
 
 
 def test_update_model_for_new_user_and_item():
@@ -224,8 +223,8 @@ def test_update_model_for_new_user_and_item():
     model = ElementwiseAlternatingLeastSquares(num_iter=1)
     model.fit(user_items)
     model.update_model(3, 4)
-    assert model.user_factors().shape[0] == 103
-    assert model.item_factors().shape[0] == 104
+    assert model.user_factors.shape[0] == 103
+    assert model.item_factors.shape[0] == 104
 
 
 @mock.patch.object(ElementwiseAlternatingLeastSquares, "_init_U")
@@ -285,7 +284,6 @@ def test_save_and_load_model(tmp_path):
         regularization=0.01,
         init_mean=0,
         init_stdev=0.01,
-        dtype=np.float32,
         num_iter=1,
         num_iter_online=1,
         random_state=None,

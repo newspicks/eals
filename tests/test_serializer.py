@@ -14,7 +14,6 @@ def assert_model_equality(model1, model2):
     assert model1.regularization == model2.regularization
     assert model1.init_mean == model2.init_mean
     assert model1.init_stdev == model2.init_stdev
-    assert model1.dtype == model2.dtype
     assert model1.num_iter == model2.num_iter
     assert model1.num_iter_online == model2.num_iter_online
     assert model1.random_state == model2.random_state
@@ -35,7 +34,6 @@ def test_serialize_and_deserialize(tmp_path):
         regularization=0.01,
         init_mean=0,
         init_stdev=0.01,
-        dtype=np.float32,
         num_iter=1,
         num_iter_online=1,
         random_state=None,
