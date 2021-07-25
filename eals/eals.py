@@ -87,6 +87,14 @@ class ElementwiseAlternatingLeastSquares:
 
         self._training_mode = "batch"  # "batch" (use csr/csc matrix) or "online" (use lil matrix)
 
+    @property
+    def user_factors(self):
+        return self.U
+
+    @property
+    def item_factors(self):
+        return self.V
+
     def fit(self, user_items: sps.spmatrix, show_loss: bool = False, postprocess: bool = True):
         """Fit the model to the given rating data from scratch
 
@@ -114,6 +122,45 @@ class ElementwiseAlternatingLeastSquares:
 
         if postprocess:
             self._convert_data_for_online_training()
+
+    def update_model(self, u, i, show_loss: bool = False):
+        """Update the model for single, possibly new user-item pair
+
+        Parameters
+        ----------
+        u: int
+            User index
+        i: int
+            Item index
+        show_loss: bool
+            Whether to compute and print the loss after each iteration.
+            Enabling this option may slow down training.
+        """
+        timer = Timer()
+        self._convert_data_for_online_training()
+        self._expand_data(u, i)
+        self.user_items_lil[u, i] = 1
+        self.user_items_lil_t[i, u] = 1
+        self.W_lil[u, i] = 1  # w_new
+        self.W_lil_t[i, u] = 1  # w_new
+        # a new item
+        if self.Wi[i] == 0:
+            # NOTE: This update rule for Wi does not seem to be described in the paper.
+            self.Wi[i] = self.w0 / self.item_count
+            for f in range(self.factors):
+                for k in range(f + 1):
+                    val = self.SV[f, k] + self.V[i, f] * self.V[i, k] * self.Wi[i]
+                    self.SV[f, k] = val
+                    self.SV[k, f] = val
+
+        for _ in range(self.num_iter_online):
+            old_user_vec = self._update_user(u)
+            self._update_SU(u, old_user_vec)
+            old_item_vec = self._update_item(i)
+            self._update_SV(i, old_item_vec)
+
+        if show_loss:
+            self._print_loss(1, "update_model", timer.elapsed())
 
     def _init_data(self, user_items: sps.spmatrix):
         """Initialize parameters and hyperparameters before batch training"""
@@ -186,14 +233,6 @@ class ElementwiseAlternatingLeastSquares:
             del self.W_lil
             del self.W_lil_t
             self._training_mode = "batch"
-
-    @property
-    def user_factors(self):
-        return self.U
-
-    @property
-    def item_factors(self):
-        return self.V
 
     def _update_user(self, u):
         """Update the user latent vector"""
@@ -303,49 +342,6 @@ class ElementwiseAlternatingLeastSquares:
         self.user_count = new_user_count
         self.item_count = new_item_count
 
-    def update_model(self, u, i, show_loss: bool = False):
-        """Update the model for single, possibly new user-item pair
-
-        Parameters
-        ----------
-        u: int
-            User index
-        i: int
-            Item index
-        show_loss: bool
-            Whether to compute and print the loss after each iteration.
-            Enabling this option may slow down training.
-        """
-        timer = Timer()
-        self._convert_data_for_online_training()
-        self._expand_data(u, i)
-        self.user_items_lil[u, i] = 1
-        self.user_items_lil_t[i, u] = 1
-        self.W_lil[u, i] = 1  # w_new
-        self.W_lil_t[i, u] = 1  # w_new
-        # a new item
-        if self.Wi[i] == 0:
-            # NOTE: This update rule for Wi does not seem to be described in the paper.
-            self.Wi[i] = self.w0 / self.item_count
-            for f in range(self.factors):
-                for k in range(f + 1):
-                    val = self.SV[f, k] + self.V[i, f] * self.V[i, k] * self.Wi[i]
-                    self.SV[f, k] = val
-                    self.SV[k, f] = val
-
-        for _ in range(self.num_iter_online):
-            old_user_vec = self._update_user(u)
-            self._update_SU(u, old_user_vec)
-            old_item_vec = self._update_item(i)
-            self._update_SV(i, old_item_vec)
-
-        if show_loss:
-            self._print_loss(1, "update_model", timer.elapsed())
-
-    def _print_loss(self, iter, message, elapsed):
-        loss = self.calc_loss()
-        print(f"iter={iter} {message} loss={loss:.4f} ({elapsed:.4f} sec)")
-
     def calc_loss(self):
         if self._training_mode == "batch":
             loss = _calc_loss_csr(
@@ -379,6 +375,10 @@ class ElementwiseAlternatingLeastSquares:
                 f"calc_loss() for self._training_mode='{self._training_mode}' is not defined"
             )
         return loss
+
+    def _print_loss(self, iter, message, elapsed):
+        loss = self.calc_loss()
+        print(f"iter={iter} {message} loss={loss:.4f} ({elapsed:.4f} sec)")
 
     def save(self, file: Union[Path, str], compress: Union[bool, int] = True):
         """Save the model in joblib format
