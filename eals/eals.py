@@ -107,10 +107,10 @@ class ElementwiseAlternatingLeastSquares:
         for iter in range(self.num_iter):
             self._update_user_and_SU_all()
             if show_loss:
-                self.print_loss(iter, "update_user", timer.elapsed())
+                self._print_loss(iter, "update_user", timer.elapsed())
             self._update_item_and_SV_all()
             if show_loss:
-                self.print_loss(iter, "update_item", timer.elapsed())
+                self._print_loss(iter, "update_item", timer.elapsed())
 
         if postprocess:
             self._convert_data_for_online_training()
@@ -340,9 +340,9 @@ class ElementwiseAlternatingLeastSquares:
             self._update_SV(i, old_item_vec)
 
         if show_loss:
-            self.print_loss(1, "update_model", timer.elapsed())
+            self._print_loss(1, "update_model", timer.elapsed())
 
-    def print_loss(self, iter, message, elapsed):
+    def _print_loss(self, iter, message, elapsed):
         loss = self.calc_loss()
         print(f"iter={iter} {message} loss={loss:.4f} ({elapsed:.4f} sec)")
 
