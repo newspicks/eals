@@ -19,8 +19,8 @@ def assert_model_equality(model1, model2):
     assert model1.random_state == model2.random_state
     assert np.allclose(model1.U, model2.U)
     assert np.allclose(model1.V, model2.V)
-    assert (model1.user_items_lil.data == model2.user_items_lil.data).all()
-    assert (model1.user_items_lil.rows == model2.user_items_lil.rows).all()
+    assert (model1._user_items_lil.data == model2._user_items_lil.data).all()
+    assert (model1._user_items_lil.rows == model2._user_items_lil.rows).all()
 
 
 def test_serialize_and_deserialize(tmp_path):
