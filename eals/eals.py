@@ -105,10 +105,10 @@ class ElementwiseAlternatingLeastSquares:
 
         timer = Timer()
         for iter in range(self.num_iter):
-            self.update_user_and_SU_all()
+            self._update_user_and_SU_all()
             if show_loss:
                 self.print_loss(iter, "update_user", timer.elapsed())
-            self.update_item_and_SV_all()
+            self._update_item_and_SV_all()
             if show_loss:
                 self.print_loss(iter, "update_item", timer.elapsed())
 
@@ -195,7 +195,7 @@ class ElementwiseAlternatingLeastSquares:
     def item_factors(self):
         return self.V
 
-    def update_user(self, u):
+    def _update_user(self, u):
         """Update the user latent vector"""
         self._convert_data_for_online_training()
         old_user_vec = self.U[[u]]
@@ -213,10 +213,10 @@ class ElementwiseAlternatingLeastSquares:
         )
         return old_user_vec
 
-    def update_SU(self, u, old_user_vec):
+    def _update_SU(self, u, old_user_vec):
         _update_SU(self.SU, old_user_vec, self.U[[u]])
 
-    def update_user_and_SU_all(self):
+    def _update_user_and_SU_all(self):
         self._convert_data_for_batch_training()
         _update_user_and_SU_all(
             self.user_items.indptr,
@@ -234,7 +234,7 @@ class ElementwiseAlternatingLeastSquares:
             self.user_count,
         )
 
-    def update_item(self, i):
+    def _update_item(self, i):
         """Update the item latent vector"""
         self._convert_data_for_online_training()
         old_item_vec = self.V[[i]]
@@ -252,10 +252,10 @@ class ElementwiseAlternatingLeastSquares:
         )
         return old_item_vec
 
-    def update_SV(self, i, old_item_vec):
+    def _update_SV(self, i, old_item_vec):
         _update_SV(self.SV, old_item_vec, self.V[[i]], self.Wi[i])
 
-    def update_item_and_SV_all(self):
+    def _update_item_and_SV_all(self):
         self._convert_data_for_batch_training()
         _update_item_and_SV_all(
             self.user_items_csc.indptr,
@@ -334,10 +334,10 @@ class ElementwiseAlternatingLeastSquares:
                     self.SV[k, f] = val
 
         for _ in range(self.num_iter_online):
-            old_user_vec = self.update_user(u)
-            self.update_SU(u, old_user_vec)
-            old_item_vec = self.update_item(i)
-            self.update_SV(i, old_item_vec)
+            old_user_vec = self._update_user(u)
+            self._update_SU(u, old_user_vec)
+            old_item_vec = self._update_item(i)
+            self._update_SV(i, old_item_vec)
 
         if show_loss:
             self.print_loss(1, "update_model", timer.elapsed())
