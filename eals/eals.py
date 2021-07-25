@@ -101,7 +101,9 @@ class ElementwiseAlternatingLeastSquares:
             return self._user_items
         if self._training_mode == "online":
             return self._user_items_lil
-        raise NotImplementedError(f"property user_items for self._training_mode='{self._training_mode}' is not defined")
+        raise NotImplementedError(
+            f"property user_items for self._training_mode='{self._training_mode}' is not defined"
+        )
 
     @property
     def W(self) -> sps.spmatrix:
@@ -109,7 +111,9 @@ class ElementwiseAlternatingLeastSquares:
             return self._W
         if self._training_mode == "online":
             return self._W_lil
-        raise NotImplementedError(f"property W for self._training_mode='{self._training_mode}' is not defined")
+        raise NotImplementedError(
+            f"property W for self._training_mode='{self._training_mode}' is not defined"
+        )
 
     def fit(self, user_items: sps.spmatrix, show_loss: bool = False, postprocess: bool = True):
         """Fit the model to the given rating data from scratch
