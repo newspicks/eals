@@ -53,7 +53,7 @@ def bench_real_data(file, mat_type):
     print("  setup: ", end="")
     t0 = time.time()
     model = ElementwiseAlternatingLeastSquares()
-    model.init_data(train_data)
+    model._init_data(train_data)
     if mat_type == "lil":
         model._convert_data_for_online_training()
     t1 = time.time()
@@ -88,7 +88,7 @@ def bench_random_data(mat_type):
         print("  setup: ", end="")
         t0 = time.time()
         model = ElementwiseAlternatingLeastSquares()
-        model.init_data(train_data)
+        model._init_data(train_data)
         if mat_type == "lil":
             model._convert_data_for_online_training()
         t1 = time.time()

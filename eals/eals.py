@@ -101,7 +101,7 @@ class ElementwiseAlternatingLeastSquares:
             in order to update_model() after fit().
             This postprocessing may add some performance overhead for large data.
         """
-        self.init_data(user_items)
+        self._init_data(user_items)
 
         timer = Timer()
         for iter in range(self.num_iter):
@@ -115,7 +115,7 @@ class ElementwiseAlternatingLeastSquares:
         if postprocess:
             self._convert_data_for_online_training()
 
-    def init_data(self, user_items: sps.spmatrix):
+    def _init_data(self, user_items: sps.spmatrix):
         """Initialize parameters and hyperparameters before batch training"""
         # coerce user_items to csr matrix with float32 type
         if not isinstance(user_items, sps.csr_matrix):

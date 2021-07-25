@@ -28,7 +28,7 @@ def test_init_data():
     alpha = 0.5
     w0 = 10
     model = ElementwiseAlternatingLeastSquares(alpha=alpha, w0=w0)
-    model.init_data(user_items)
+    model._init_data(user_items)
     assert np.allclose(model.Wi, [w0 / 2, w0 / 2])
     assert np.allclose(model.W.toarray(), [[0, 1], [1, 0]])
 
@@ -45,7 +45,7 @@ def test_update_user(mock_init_V, mock_init_U):
     mock_init_V.return_value = V0
     regularization = 0.01
     model = ElementwiseAlternatingLeastSquares(regularization=regularization, factors=U0.shape[1])
-    model.init_data(user_items)
+    model._init_data(user_items)
     old_user_vec = model.update_user(0)
     assert np.allclose(old_user_vec, [[1.0]])
     assert np.allclose(model.U, [[1 / (1 + regularization)]])
@@ -63,7 +63,7 @@ def test_update_item(mock_init_V, mock_init_U):
     mock_init_V.return_value = V0
     regularization = 0.02
     model = ElementwiseAlternatingLeastSquares(regularization=regularization, factors=U0.shape[1])
-    model.init_data(user_items)
+    model._init_data(user_items)
     old_item_vec = model.update_item(0)
     assert np.allclose(old_item_vec, [[1.0]])
     assert np.allclose(model.V, [[1 / (1 + regularization)]])
@@ -75,7 +75,7 @@ def test_update_SU_with_factor1d(mock_init_U):
     U0 = np.array([[3.0]])
     mock_init_U.return_value = U0
     model = ElementwiseAlternatingLeastSquares(factors=U0.shape[1])
-    model.init_data(user_items)  # SU = 3*3 = 9
+    model._init_data(user_items)  # SU = 3*3 = 9
     model.update_SU(u=0, old_user_vec=np.array([[2.0]]))
     # SU = 9 - 2*2 + 3*3 = 14
     assert np.allclose(model.SU, [[14.0]])
@@ -87,7 +87,7 @@ def test_update_SU_with_factor2d(mock_init_U):
     U0 = np.array([[1.0, 2.0]])
     mock_init_U.return_value = U0
     model = ElementwiseAlternatingLeastSquares(factors=U0.shape[1])
-    model.init_data(user_items)  # SU = [[1],[2]] @ [[1,2]] = [[1,2],[2,4]]
+    model._init_data(user_items)  # SU = [[1],[2]] @ [[1,2]] = [[1,2],[2,4]]
     model.update_SU(u=0, old_user_vec=np.array([[3.0, 4.0]]))
     # SU = [[1,2],[2,4]] - [[3],[4]] @ [[3,4]] + [[1],[2]] @ [[1,2]] = [[-7, -8], [-8, -8]]
     assert np.allclose(model.SU, [[-7.0, -8.0], [-8.0, -8.0]])
@@ -101,7 +101,7 @@ def test_update_SV_with_factor1d(mock_init_V):
     V0 = np.array([[3.0]])
     mock_init_V.return_value = V0
     model = ElementwiseAlternatingLeastSquares(w0=w0, alpha=alpha, factors=V0.shape[1])
-    model.init_data(user_items)  # SV = 3*3 * 5 = 45
+    model._init_data(user_items)  # SV = 3*3 * 5 = 45
     model.update_SV(i=0, old_item_vec=np.array([[2.0]]))
     # SV = 45 - (2*2 - 3*3) * 5 = 70
     assert np.allclose(model.SV, [[70.0]])
@@ -115,7 +115,7 @@ def test_update_SV_with_factor2d(mock_init_V):
     V0 = np.array([[3.0, 4.0]])
     mock_init_V.return_value = V0
     model = ElementwiseAlternatingLeastSquares(w0=w0, alpha=alpha, factors=V0.shape[1])
-    model.init_data(user_items)  # SV = [[3],[4]] @ [[3,4]] * 5 = [[45,60],[60,80]]
+    model._init_data(user_items)  # SV = [[3],[4]] @ [[3,4]] * 5 = [[45,60],[60,80]]
     model.update_SV(i=0, old_item_vec=np.array([[2.0, 3.0]]))
     # SV = [[45,60],[60,80]] - ([[2],[3]] @ [[2,3]] - [[3],[4]] @ [[3,4]]) * 5 = [[70,90],[90,115]]
     assert np.allclose(model.SV, [[70, 90], [90, 115]])
@@ -131,7 +131,7 @@ def test_update_user_and_SU_all(mock_init_V, mock_init_U):
     mock_init_V.return_value = V0
     regularization = 0.01
     model = ElementwiseAlternatingLeastSquares(regularization=regularization, factors=U0.shape[1])
-    model.init_data(user_items)
+    model._init_data(user_items)
     model.update_user_and_SU_all()
     assert np.allclose(model.U, [[1 / (1 + regularization)]])
     assert np.allclose(model.SU, model.U.T @ model.U)
@@ -147,7 +147,7 @@ def test_update_item_and_SV_all(mock_init_V, mock_init_U):
     mock_init_V.return_value = V0
     regularization = 0.02
     model = ElementwiseAlternatingLeastSquares(regularization=regularization, factors=U0.shape[1])
-    model.init_data(user_items)
+    model._init_data(user_items)
     model.update_item_and_SV_all()
     assert np.allclose(model.V, [[1 / (1 + regularization)]])
     assert np.allclose(model.SV, (model.V.T * model.Wi) @ model.V)
@@ -178,7 +178,7 @@ def test_fit_one_iteration(mock_init_V, mock_init_U):
     model_actual = ElementwiseAlternatingLeastSquares(num_iter=1, factors=U0.shape[1])
     model_actual.fit(user_items)
     model_expected = ElementwiseAlternatingLeastSquares(factors=U0.shape[1])
-    model_expected.init_data(user_items)
+    model_expected._init_data(user_items)
     model_expected.update_user_and_SU_all()
     model_expected.update_item_and_SV_all()
     assert np.allclose(model_actual.U, model_expected.U)
@@ -242,7 +242,7 @@ def test_calc_loss_csr(mock_init_V, mock_init_U):
     model = ElementwiseAlternatingLeastSquares(
         regularization=regularization, w0=w0, alpha=alpha, factors=U0.shape[1]
     )
-    model.init_data(user_items)
+    model._init_data(user_items)
 
     l_regularization = regularization * ((U0 ** 2).sum() + (V0 ** 2).sum())  # regularization term
     l_user0 = (user_items[0, 0] - U0[0] @ V0[0]) ** 2  # usual loss term
@@ -267,7 +267,7 @@ def test_calc_loss_lil(mock_init_V, mock_init_U):
     model = ElementwiseAlternatingLeastSquares(
         regularization=regularization, w0=w0, alpha=alpha, factors=U0.shape[1]
     )
-    model.init_data(user_items)
+    model._init_data(user_items)
     model._convert_data_for_online_training()
 
     l_regularization = regularization * ((U0 ** 2).sum() + (V0 ** 2).sum())  # regularization term
