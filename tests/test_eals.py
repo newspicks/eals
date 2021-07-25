@@ -18,8 +18,8 @@ def assert_model_equality(model1, model2):
     assert model1.random_state == model2.random_state
     assert np.allclose(model1.U, model2.U)
     assert np.allclose(model1.V, model2.V)
-    assert (model1.user_items_lil.data == model2.user_items_lil.data).all()
-    assert (model1.user_items_lil.rows == model2.user_items_lil.rows).all()
+    assert (model1._user_items_lil.data == model2._user_items_lil.data).all()
+    assert (model1._user_items_lil.rows == model2._user_items_lil.rows).all()
 
 
 def test_init_data():
@@ -30,7 +30,7 @@ def test_init_data():
     model = ElementwiseAlternatingLeastSquares(alpha=alpha, w0=w0)
     model._init_data(user_items)
     assert np.allclose(model.Wi, [w0 / 2, w0 / 2])
-    assert np.allclose(model.W.toarray(), [[0, 1], [1, 0]])
+    assert np.allclose(model._W.toarray(), [[0, 1], [1, 0]])
 
 
 @mock.patch.object(ElementwiseAlternatingLeastSquares, "_init_U")

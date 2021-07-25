@@ -88,12 +88,28 @@ class ElementwiseAlternatingLeastSquares:
         self._training_mode = "batch"  # "batch" (use csr/csc matrix) or "online" (use lil matrix)
 
     @property
-    def user_factors(self):
+    def user_factors(self) -> np.ndarray:
         return self.U
 
     @property
-    def item_factors(self):
+    def item_factors(self) -> np.ndarray:
         return self.V
+
+    @property
+    def user_items(self) -> sps.spmatrix:
+        if self._training_mode == "batch":
+            return self._user_items
+        if self._training_mode == "online":
+            return self._user_items_lil
+        raise NotImplementedError(f"property user_items for self._training_mode='{self._training_mode}' is not defined")
+
+    @property
+    def W(self) -> sps.spmatrix:
+        if self._training_mode == "batch":
+            return self._W
+        if self._training_mode == "online":
+            return self._W_lil
+        raise NotImplementedError(f"property W for self._training_mode='{self._training_mode}' is not defined")
 
     def fit(self, user_items: sps.spmatrix, show_loss: bool = False, postprocess: bool = True):
         """Fit the model to the given rating data from scratch
@@ -139,10 +155,10 @@ class ElementwiseAlternatingLeastSquares:
         timer = Timer()
         self._convert_data_for_online_training()
         self._expand_data(u, i)
-        self.user_items_lil[u, i] = 1
-        self.user_items_lil_t[i, u] = 1
-        self.W_lil[u, i] = 1  # w_new
-        self.W_lil_t[i, u] = 1  # w_new
+        self._user_items_lil[u, i] = 1
+        self._user_items_lil_t[i, u] = 1
+        self._W_lil[u, i] = 1  # w_new
+        self._W_lil_t[i, u] = 1  # w_new
         # a new item
         if self.Wi[i] == 0:
             # NOTE: This update rule for Wi does not seem to be described in the paper.
@@ -172,10 +188,10 @@ class ElementwiseAlternatingLeastSquares:
             print("converting type of user_items to np.float32")
             user_items = user_items.astype(np.float32)
 
-        self.user_items = user_items
-        self.user_items_csc = self.user_items.tocsc()
-        self.user_count, self.item_count = self.user_items.shape
-        p = self.user_items_csc.getnnz(axis=0)  # item frequencies
+        self._user_items = user_items
+        self._user_items_csc = self._user_items.tocsc()
+        self.user_count, self.item_count = self._user_items.shape
+        p = self._user_items_csc.getnnz(axis=0)  # item frequencies
         p = (p / p.sum()) ** self.alpha  # item popularities
         self.Wi = (
             p / p.sum() * self.w0
@@ -183,15 +199,15 @@ class ElementwiseAlternatingLeastSquares:
 
         # weights for squared errors of ratings
         # NOTE: Elements of W are fixed to be 1 as in the original implementation
-        self.W = self.user_items.copy()
-        self.W.data = np.ones(len(self.W.data)).astype(np.float32)
-        self.W_csc = self.W.tocsc()
+        self._W = self._user_items.copy()
+        self._W.data = np.ones(len(self._W.data)).astype(np.float32)
+        self._W_csc = self._W.tocsc()
 
         # data and weights for online training
-        self.user_items_lil = sps.lil_matrix((0, 0))
-        self.user_items_lil_t = sps.lil_matrix((0, 0))
-        self.W_lil = sps.lil_matrix((0, 0))
-        self.W_lil_t = sps.lil_matrix((0, 0))
+        self._user_items_lil = sps.lil_matrix((0, 0))
+        self._user_items_lil_t = sps.lil_matrix((0, 0))
+        self._W_lil = sps.lil_matrix((0, 0))
+        self._W_lil_t = sps.lil_matrix((0, 0))
 
         if self.random_state is not None:
             np.random.seed(self.random_state)
@@ -202,36 +218,36 @@ class ElementwiseAlternatingLeastSquares:
 
         self._training_mode = "batch"
 
-    def _init_U(self):
+    def _init_U(self) -> np.ndarray:
         return np.random.normal(self.init_mean, self.init_stdev, (self.user_count, self.factors))
 
-    def _init_V(self):
+    def _init_V(self) -> np.ndarray:
         return np.random.normal(self.init_mean, self.init_stdev, (self.item_count, self.factors))
 
     def _convert_data_for_online_training(self):
         # convert matrices to lil for online training
         if self._training_mode != "online":
-            self.user_items_lil = self.user_items.tolil()
-            self.user_items_lil_t = self.user_items_lil.T
-            self.W_lil = self.W.tolil()
-            self.W_lil_t = self.W_lil.T
-            del self.user_items
-            del self.user_items_csc
-            del self.W
-            del self.W_csc
+            self._user_items_lil = self._user_items.tolil()
+            self._user_items_lil_t = self._user_items_lil.T
+            self._W_lil = self._W.tolil()
+            self._W_lil_t = self._W_lil.T
+            del self._user_items
+            del self._user_items_csc
+            del self._W
+            del self._W_csc
             self._training_mode = "online"
 
     def _convert_data_for_batch_training(self):
         # convert matrices to csr for batch training
         if self._training_mode != "batch":
-            self.user_items = self.user_items_lil.tocsr()
-            self.user_items_csc = self.user_items.tocsc()
-            self.W = self.W_lil.tocsr()
-            self.W_csc = self.W.tocsc()
-            del self.user_items_lil
-            del self.user_items_lil_t
-            del self.W_lil
-            del self.W_lil_t
+            self._user_items = self._user_items_lil.tocsr()
+            self._user_items_csc = self._user_items.tocsc()
+            self._W = self._W_lil.tocsr()
+            self._W_csc = self._W.tocsc()
+            del self._user_items_lil
+            del self._user_items_lil_t
+            del self._W_lil
+            del self._W_lil_t
             self._training_mode = "batch"
 
     def _update_user(self, u):
@@ -240,12 +256,12 @@ class ElementwiseAlternatingLeastSquares:
         old_user_vec = self.U[[u]]
         _update_user(
             u,
-            np.array(self.user_items_lil.rows[u], dtype=np.int32),
-            np.array(self.user_items_lil.data[u], dtype=np.float32),
+            np.array(self._user_items_lil.rows[u], dtype=np.int32),
+            np.array(self._user_items_lil.data[u], dtype=np.float32),
             self.U,
             self.V,
             self.SV,
-            np.array(self.W_lil.data[u], dtype=np.float32),
+            np.array(self._W_lil.data[u], dtype=np.float32),
             self.Wi,
             self.factors,
             self.regularization,
@@ -258,15 +274,15 @@ class ElementwiseAlternatingLeastSquares:
     def _update_user_and_SU_all(self):
         self._convert_data_for_batch_training()
         _update_user_and_SU_all(
-            self.user_items.indptr,
-            self.user_items.indices,
-            self.user_items.data,
+            self._user_items.indptr,
+            self._user_items.indices,
+            self._user_items.data,
             self.U,
             self.V,
             self.SU,
             self.SV,
-            self.W.indptr,
-            self.W.data,
+            self._W.indptr,
+            self._W.data,
             self.Wi,
             self.factors,
             self.regularization,
@@ -279,12 +295,12 @@ class ElementwiseAlternatingLeastSquares:
         old_item_vec = self.V[[i]]
         _update_item(
             i,
-            np.array(self.user_items_lil_t.rows[i], dtype=np.int32),
-            np.array(self.user_items_lil_t.data[i], dtype=np.float32),
+            np.array(self._user_items_lil_t.rows[i], dtype=np.int32),
+            np.array(self._user_items_lil_t.data[i], dtype=np.float32),
             self.U,
             self.V,
             self.SU,
-            np.array(self.W_lil_t.data[i], dtype=np.float32),
+            np.array(self._W_lil_t.data[i], dtype=np.float32),
             self.Wi,
             self.factors,
             self.regularization,
@@ -297,15 +313,15 @@ class ElementwiseAlternatingLeastSquares:
     def _update_item_and_SV_all(self):
         self._convert_data_for_batch_training()
         _update_item_and_SV_all(
-            self.user_items_csc.indptr,
-            self.user_items_csc.indices,
-            self.user_items_csc.data,
+            self._user_items_csc.indptr,
+            self._user_items_csc.indices,
+            self._user_items_csc.data,
             self.U,
             self.V,
             self.SU,
             self.SV,
-            self.W_csc.indptr,
-            self.W_csc.data,
+            self._W_csc.indptr,
+            self._W_csc.data,
             self.Wi,
             self.factors,
             self.regularization,
@@ -325,10 +341,10 @@ class ElementwiseAlternatingLeastSquares:
             new_item_count = self.item_count
 
         if new_user_count > self.user_count or new_item_count > self.item_count:
-            self.user_items_lil.resize(new_user_count, new_item_count)
-            self.user_items_lil_t.resize(new_item_count, new_user_count)
-            self.W_lil.resize(new_user_count, new_item_count)
-            self.W_lil_t.resize(new_item_count, new_user_count)
+            self._user_items_lil.resize(new_user_count, new_item_count)
+            self._user_items_lil_t.resize(new_item_count, new_user_count)
+            self._W_lil.resize(new_user_count, new_item_count)
+            self._W_lil_t.resize(new_item_count, new_user_count)
         if new_user_count > self.user_count:
             adding_user_count = new_user_count - self.user_count
             # user_count, factors
@@ -345,26 +361,26 @@ class ElementwiseAlternatingLeastSquares:
     def calc_loss(self):
         if self._training_mode == "batch":
             loss = _calc_loss_csr(
-                self.user_items.indptr,
-                self.user_items.indices,
-                self.user_items.data,
+                self._user_items.indptr,
+                self._user_items.indices,
+                self._user_items.data,
                 self.U,
                 self.V,
                 self.SV,
-                self.W.indptr,
-                self.W.data,
+                self._W.indptr,
+                self._W.data,
                 self.Wi,
                 self.user_count,
                 self.regularization,
             )
         elif self._training_mode == "online":
             loss = _calc_loss_lil(
-                self.user_items_lil_t.rows,
-                self.user_items_lil_t.data,
+                self._user_items_lil_t.rows,
+                self._user_items_lil_t.data,
                 self.U,
                 self.V,
                 self.SV,
-                self.W_lil_t.data,
+                self._W_lil_t.data,
                 self.Wi,
                 self.user_count,
                 self.item_count,
