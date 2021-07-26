@@ -47,8 +47,12 @@ poetry install
 
 ### Tests
 
+```sh
+poetry run pytest
+```
+
 Set `USE_NUMBA=0` for faster testing without numba JIT overhead.
 
 ```sh
-USE_NUMBA=0 pytest
+USE_NUMBA=0 poetry run pytest
 ```
