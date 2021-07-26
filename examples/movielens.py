@@ -79,7 +79,7 @@ def parse_args():
     subparsers = parser.add_subparsers(dest="subcommand")
     parser_fit = subparsers.add_parser("fit", help="Fit the model")
     parser_fit.add_argument(
-        "--num_iter", type=int, default=500, help="Number of training iterations"
+        "--num_iter", type=int, default=50, help="Number of training iterations"
     )
     parser_update = subparsers.add_parser(
         "update", help="Update the model when a new rating is added"

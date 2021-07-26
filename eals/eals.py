@@ -71,7 +71,7 @@ class ElementwiseAlternatingLeastSquares:
         regularization: float = 0.01,
         init_mean: float = 0,
         init_stdev: float = 0.01,
-        num_iter: int = 500,
+        num_iter: int = 50,
         num_iter_online: int = 1,
         random_state: Optional[int] = None,
     ):
