@@ -13,11 +13,9 @@ from .util import create_user_items
 @click.option("--num-iter", type=int, default=50)
 def main(num_iter):
     batch_user_items, online_user_items = create_user_items1()
-    model = ElementwiseAlternatingLeastSquares(
-        random_state=8, show_loss=True, num_iter=num_iter
-    )
-    model.fit(batch_user_items)
-    for vec in model.user_factors()[:3]:
+    model = ElementwiseAlternatingLeastSquares(random_state=8, num_iter=num_iter)
+    model.fit(batch_user_items, show_loss=True)
+    for vec in model.user_factors[:3]:
         print(f"user: {vec}")
     for vec in model.item_factors[:3]:
         print(f"item: {vec}")
