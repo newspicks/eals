@@ -15,10 +15,10 @@ pip install git+https://github.com/newspicks/implicit-eals.git
 ## Usage
 
 ```python
-from eals import ElementWiseAlternatingLeastSquares, load_model
+from eals import ElementwiseAlternatingLeastSquares, load_model
 
 # Batch training
-model = ElementWiseAlternatingLeastSquares()
+model = ElementwiseAlternatingLeastSquares()
 model.fit(rating_data)
 
 # Learned latent vectors
@@ -47,8 +47,12 @@ poetry install
 
 ### Tests
 
+```sh
+poetry run pytest
+```
+
 Set `USE_NUMBA=0` for faster testing without numba JIT overhead.
 
 ```sh
-USE_NUMBA=0 pytest
+USE_NUMBA=0 poetry run pytest
 ```
