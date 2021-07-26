@@ -1,6 +1,7 @@
+import datetime
+
 import numpy as np
 import scipy.sparse as sps
-import datetime
 
 
 def create_user_items(
@@ -11,6 +12,21 @@ def create_user_items(
     rating_fn=lambda data_count: (np.random.rand(data_count) * 10 + 2).astype(np.float32),
     random_seed=None,
 ):
+    """Create random rating matrix
+
+    Parameters
+    ----------
+    user_count: int
+        The number of users
+    item_count: int
+        The number of items
+    data_count: int
+        The number of non-zero elements in the matrix
+    rating_fn: Callable[[int], float]
+        The function to generate the rating matrix
+    random_seed: int
+        The random seed
+    """
     if random_seed:
         np.random.seed(random_seed)
     data = rating_fn(data_count)
@@ -20,10 +36,13 @@ def create_user_items(
 
 
 class Timer:
+    """Measure elapsed time"""
+
     def __init__(self):
         self.start_time = datetime.datetime.now()
 
     def elapsed(self):
+        """Returns the elapsed time since the last call"""
         end_time = datetime.datetime.now()
         elapsed_time = end_time - self.start_time
         self.start_time = end_time

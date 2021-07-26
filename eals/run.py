@@ -1,8 +1,8 @@
+import json
 import random
 
 import click
 import numpy as np
-import json
 import scipy.sparse as sp
 
 from .eals import ElementwiseAlternatingLeastSquares
@@ -19,11 +19,14 @@ def main(num_iter):
     model.fit(batch_user_items)
     for vec in model.user_factors()[:3]:
         print(f"user: {vec}")
-    for vec in model.item_factors()[:3]:
+    for vec in model.item_factors[:3]:
         print(f"item: {vec}")
     for i in range(online_user_items.shape[0]):
-        for j in online_user_items.indices[online_user_items.indptr[i] : online_user_items.indptr[i + 1]]:
-            model.update_model(i, j)
+        for j in online_user_items.indices[
+            online_user_items.indptr[i] : online_user_items.indptr[i + 1]
+        ]:
+            model.update_model(i, j, show_loss=True)
+
 
 def create_user_items1():
     batch_user_items = create_user_items(
@@ -55,6 +58,7 @@ def create_user_items2():
     online_user_items = create_csr_matrix(test_data)
     return batch_user_items, online_user_items
 
+
 def create_csr_matrix(data, user_count=None, item_count=None):
     # 重みを変更
     weights = [1, 1, 1.5, 1.5]
@@ -68,11 +72,14 @@ def create_csr_matrix(data, user_count=None, item_count=None):
     print("creating CSR matrix")
     user_inds, item_inds, weights = zip(*data)
     if user_count and item_count:
-        user_items = sp.csr_matrix((weights, (user_inds, item_inds)), shape=(user_count, item_count), dtype=np.float32)
+        user_items = sp.csr_matrix(
+            (weights, (user_inds, item_inds)), shape=(user_count, item_count), dtype=np.float32
+        )
     else:
         user_items = sp.csr_matrix((weights, (user_inds, item_inds)), dtype=np.float32)
     print(f"user_items: size={user_items.shape}, nnz={user_items.nnz}")
     return user_items
+
 
 if __name__ == "__main__":
     main()
