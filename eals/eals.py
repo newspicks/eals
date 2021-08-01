@@ -21,6 +21,7 @@ else:
 
         return nojit
 
+
 from .serializer import deserialize_eals_joblib, serialize_eals_joblib
 from .util import Timer
 
@@ -135,10 +136,10 @@ class ElementwiseAlternatingLeastSquares:
         for iter in range(self.num_iter):
             self._update_user_and_SU_all()
             if show_loss:
-                self._print_loss(iter, "update_user", timer.elapsed())
+                self._print_loss(iter + 1, "update_user", timer.elapsed())
             self._update_item_and_SV_all()
             if show_loss:
-                self._print_loss(iter, "update_item", timer.elapsed())
+                self._print_loss(iter + 1, "update_item", timer.elapsed())
 
         if postprocess:
             self._convert_data_for_online_training()
@@ -223,11 +224,15 @@ class ElementwiseAlternatingLeastSquares:
         self._training_mode = "batch"
 
     def _init_U(self) -> np.ndarray:
-        U0: np.ndarray = np.random.normal(self.init_mean, self.init_stdev, (self.user_count, self.factors))
+        U0: np.ndarray = np.random.normal(
+            self.init_mean, self.init_stdev, (self.user_count, self.factors)
+        )
         return U0
 
     def _init_V(self) -> np.ndarray:
-        V0: np.ndarray = np.random.normal(self.init_mean, self.init_stdev, (self.item_count, self.factors))
+        V0: np.ndarray = np.random.normal(
+            self.init_mean, self.init_stdev, (self.item_count, self.factors)
+        )
         return V0
 
     def _convert_data_for_online_training(self):
