@@ -2,7 +2,7 @@
 name = "eals"
 version = "0.1.0"
 description = "eALS"
-authors = ["Akira Kitauchi <kitauchi@gmail.com>"]
+authors = ["Akira Kitauchi <kitauchi@gmail.com>", "Michihiro Nakamura <nakamichi@nakamichi.org>"]
 
 [tool.poetry.dependencies]
 python = ">=3.8,<3.10"
