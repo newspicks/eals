@@ -47,6 +47,8 @@ class ElementwiseAlternatingLeastSquares:
         The number of iterations for batch training
     num_iter_online: int
         The number of iterations for online training
+    dtype: type
+        Data type of the rating matrix passed to fit()
     random_state: int
         Numpy random seed
 
@@ -74,6 +76,7 @@ class ElementwiseAlternatingLeastSquares:
         init_stdev: float = 0.01,
         num_iter: int = 50,
         num_iter_online: int = 1,
+        dtype: type = np.float32,
         random_state: Optional[int] = None,
     ):
         self.factors = factors
@@ -84,6 +87,7 @@ class ElementwiseAlternatingLeastSquares:
         self.init_stdev = init_stdev
         self.num_iter = num_iter
         self.num_iter_online = num_iter_online
+        self.dtype = dtype
         self.random_state = random_state
 
         self._training_mode = "batch"  # "batch" (use csr/csc matrix) or "online" (use lil matrix)
@@ -189,9 +193,9 @@ class ElementwiseAlternatingLeastSquares:
         if not isinstance(user_items, sps.csr_matrix):
             print("converting user_items to CSR matrix")
             user_items = user_items.tocsr()
-        if user_items.dtype != np.float32:
-            print("converting type of user_items to np.float32")
-            user_items = user_items.astype(np.float32)
+        if user_items.dtype != self.dtype:
+            print(f"converting type of user_items to {self.dtype}")
+            user_items = user_items.astype(self.dtype)
 
         self._user_items = user_items
         self._user_items_csc = self._user_items.tocsc()
@@ -283,11 +287,11 @@ class ElementwiseAlternatingLeastSquares:
         _update_user(
             u,
             np.array(self._user_items_lil.rows[u], dtype=np.int32),
-            np.array(self._user_items_lil.data[u], dtype=np.float32),
+            np.array(self._user_items_lil.data[u], dtype=self.dtype),
             self.U,
             self.V,
             self.SV,
-            np.array(self._W_lil.data[u], dtype=np.float32),
+            np.array(self._W_lil.data[u], dtype=self.dtype),
             self.Wi,
             self.factors,
             self.regularization,
@@ -322,11 +326,11 @@ class ElementwiseAlternatingLeastSquares:
         _update_item(
             i,
             np.array(self._user_items_lil_t.rows[i], dtype=np.int32),
-            np.array(self._user_items_lil_t.data[i], dtype=np.float32),
+            np.array(self._user_items_lil_t.data[i], dtype=self.dtype),
             self.U,
             self.V,
             self.SU,
-            np.array(self._W_lil_t.data[i], dtype=np.float32),
+            np.array(self._W_lil_t.data[i], dtype=self.dtype),
             self.Wi,
             self.factors,
             self.regularization,
@@ -411,6 +415,7 @@ class ElementwiseAlternatingLeastSquares:
                 self.user_count,
                 self.item_count,
                 self.regularization,
+                self.dtype,
             )
         else:
             raise NotImplementedError(
@@ -600,14 +605,14 @@ def _calc_loss_lil_inner_loop(i, indices, ratings, weights, U, V, Wi):
     return l
 
 
-def _calc_loss_lil(cols, data, U, V, SV, w_t_data, Wi, user_count, item_count, regularization):
+def _calc_loss_lil(cols, data, U, V, SV, w_t_data, Wi, user_count, item_count, regularization, dtype):
     # TODO: @njit does not improve performance of this function. Better way to implement it?
     loss = _calc_loss_lil_init(U, V, SV, user_count, regularization)
     for i in range(item_count):
         if not cols[i]:
             continue
         user_indices = np.array(cols[i], dtype=np.int32)
-        ratings = np.array(data[i], dtype=np.float32)
-        weights = np.array(w_t_data[i], dtype=np.float32)
+        ratings = np.array(data[i], dtype=dtype)
+        weights = np.array(w_t_data[i], dtype=dtype)
         loss += _calc_loss_lil_inner_loop(i, user_indices, ratings, weights, U, V, Wi)
     return loss
