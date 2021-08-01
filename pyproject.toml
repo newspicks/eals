@@ -5,8 +5,7 @@ description = "eALS"
 authors = ["Akira Kitauchi <kitauchi@gmail.com>"]
 
 [tool.poetry.dependencies]
-python = ">=3.9,<3.10"
-click = "^7.1.2"
+python = ">=3.8,<3.10"
 numpy = "^1.20.3"
 scipy = "^1.6"
 numba = "^0.53.1"
@@ -22,6 +21,7 @@ flake8 = "^3.8.4"
 mypy = "^0.812"
 ipython = "^7.25.0"
 ipykernel = "^6.0.1"
+tox = "^3.24.1"
 
 [tool.isort]
 line_length = 99
