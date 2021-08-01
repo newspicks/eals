@@ -56,3 +56,9 @@ Set `USE_NUMBA=0` for faster testing without numba JIT overhead.
 ```sh
 USE_NUMBA=0 poetry run pytest
 ```
+
+To run tests against all supported Python versions, use [tox](https://tox.readthedocs.io/).
+
+```sh
+poetry run tox
+```
