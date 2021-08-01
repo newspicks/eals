@@ -419,7 +419,8 @@ class ElementwiseAlternatingLeastSquares:
         return loss
 
     def _print_loss(self, iter, message, elapsed):
-        loss = self.calc_loss()
+        """Print the loss per nonzero element of user_items"""
+        loss = self.calc_loss() / self.user_items.nnz
         print(f"iter={iter} {message} loss={loss:.4f} ({elapsed:.4f} sec)")
 
     def save(self, file: Union[Path, str], compress: Union[bool, int] = True):
