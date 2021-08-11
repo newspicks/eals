@@ -5,13 +5,13 @@ import scipy.sparse as sps
 
 
 def create_user_items(
-    user_count=2000,
-    item_count=1000,
-    data_count=2000 * 20,
+    user_count: int = 2000,
+    item_count: int = 1000,
+    data_count: int = 2000 * 20,
     # rating_fn must return a float array of shape (data_count,)
     rating_fn=lambda data_count: (np.random.rand(data_count) * 10 + 2).astype(np.float32),
     random_seed=None,
-):
+) -> sps.spmatrix:
     """Create random rating matrix
 
     Parameters
@@ -38,10 +38,10 @@ def create_user_items(
 class Timer:
     """Measure elapsed time"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.start_time = datetime.datetime.now()
 
-    def elapsed(self):
+    def elapsed(self) -> float:
         """Returns the elapsed time since the last call"""
         end_time = datetime.datetime.now()
         elapsed_time = end_time - self.start_time
