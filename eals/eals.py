@@ -90,7 +90,8 @@ class ElementwiseAlternatingLeastSquares:
         self.dtype = dtype
         self.random_state = random_state
 
-        self._training_mode = "batch"  # "batch" (use csr/csc matrix) or "online" (use lil matrix)
+        # "batch" (use csr/csc matrix) or "online" (use lil matrix)
+        self._training_mode = "batch"
 
     @property
     def user_factors(self) -> np.ndarray:
@@ -200,11 +201,13 @@ class ElementwiseAlternatingLeastSquares:
         self._user_items = user_items
         self._user_items_csc = self._user_items.tocsc()
         self.user_count, self.item_count = self._user_items.shape
-        p = self._user_items_csc.getnnz(axis=0)  # item frequencies
-        p = (p / p.sum()) ** self.alpha  # item popularities
-        self.Wi = (
-            p / p.sum() * self.w0
-        )  # confidence that item i missed by users is a true negative assessment
+
+        # item frequencies
+        p = self._user_items_csc.getnnz(axis=0)
+        # item popularities
+        p = (p / p.sum()) ** self.alpha
+        # confidence that item i missed by users is a true negative assessment
+        self.Wi = p / p.sum() * self.w0
 
         # weights for squared errors of ratings
         # NOTE: Elements of W are fixed to be 1 as in the original implementation
@@ -455,7 +458,7 @@ def load_model(file: Union[Path, str]) -> ElementwiseAlternatingLeastSquares:
     return deserialize_eals_joblib(file)
 
 
-# Actual implementation of eALS with numba jit
+# Actual implementation of eALS with Numba JIT
 
 
 @njit(
@@ -560,7 +563,9 @@ def _update_item_and_SV_all(
         user_ratings = data[indptr[i] : indptr[i + 1]]
         w_users = w_data[w_indptr[i] : w_indptr[i + 1]]
         _update_item(i, user_inds, user_ratings, U, V, SU, w_users, Wi, factors, regularization)
-    SV[:] = (V.T * Wi) @ V  # in-place assignment
+
+    # in-place assignment
+    SV[:] = (V.T * Wi) @ V
 
 
 @njit(
@@ -574,13 +579,15 @@ def _calc_loss_csr(
         item_indices = indices[indptr[u] : indptr[u + 1]]
         ratings = data[indptr[u] : indptr[u + 1]]
         weights = w_data[w_indptr[u] : w_indptr[u + 1]]
+
         for i, w, rating in zip(item_indices, weights, ratings):
             pred = U[u] @ V[i]
             loss += w * ((rating - pred) ** 2)
-            loss -= Wi[i] * (pred ** 2)  # for non-missing items
-        loss += (
-            SV @ U[u] @ U[u]
-        )  # sum of (Wi[i] * (pred ** 2)) for all (= missing + non-missing) items
+            # for non-missing items
+            loss -= Wi[i] * (pred ** 2)
+
+        # sum of (Wi[i] * (pred ** 2)) for all (= missing + non-missing) items
+        loss += SV @ U[u] @ U[u]
     return loss
 
 
