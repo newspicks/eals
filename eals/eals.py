@@ -121,7 +121,9 @@ class ElementwiseAlternatingLeastSquares:
             f"property W for self._training_mode='{self._training_mode}' is not defined"
         )
 
-    def fit(self, user_items: sps.spmatrix, show_loss: bool = False, postprocess: bool = True) -> None:
+    def fit(
+        self, user_items: sps.spmatrix, show_loss: bool = False, postprocess: bool = True
+    ) -> None:
         """Fit the model to the given rating data from scratch
 
         Parameters
@@ -361,7 +363,7 @@ class ElementwiseAlternatingLeastSquares:
             self.item_count,
         )
 
-    def _expand_data(self, u: int , i: int) -> None:
+    def _expand_data(self, u: int, i: int) -> None:
         """Expand matrices for a new user-item pair if necessary"""
         extra_count = 100
         if u >= self.user_count:
@@ -614,7 +616,19 @@ def _calc_loss_lil_inner_loop(i, indices, ratings, weights, U, V, Wi):
 
 
 # TODO: @njit does not improve performance of this function. Better way to implement it?
-def _calc_loss_lil(cols: np.ndarray, data: np.ndarray, U: sps.spmatrix, V: sps.spmatrix, SV: np.ndarray, w_t_data: np.ndarray, Wi:np.ndarray, user_count: int, item_count: int, regularization: float, dtype: type) -> float:
+def _calc_loss_lil(
+    cols: np.ndarray,
+    data: np.ndarray,
+    U: sps.spmatrix,
+    V: sps.spmatrix,
+    SV: np.ndarray,
+    w_t_data: np.ndarray,
+    Wi: np.ndarray,
+    user_count: int,
+    item_count: int,
+    regularization: float,
+    dtype: type,
+) -> float:
     loss: float = _calc_loss_lil_init(U, V, SV, user_count, regularization)
     for i in range(item_count):
         if not cols[i]:
