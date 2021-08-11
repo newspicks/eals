@@ -42,6 +42,7 @@ See the [examples](examples/) directory for complete examples.
 ```sh
 git clone https://github.com/newspicks/implicit-eals.git
 cd implicit-eals
+poetry run pip install -U pip
 poetry install
 ```
 
