@@ -78,7 +78,7 @@ class ElementwiseAlternatingLeastSquares:
         num_iter_online: int = 1,
         dtype: type = np.float32,
         random_state: Optional[int] = None,
-    ):
+    ) -> None:
         self.factors = factors
         self.w0 = w0
         self.alpha = alpha
@@ -90,7 +90,8 @@ class ElementwiseAlternatingLeastSquares:
         self.dtype = dtype
         self.random_state = random_state
 
-        self._training_mode = "batch"  # "batch" (use csr/csc matrix) or "online" (use lil matrix)
+        # "batch" (use csr/csc matrix) or "online" (use lil matrix)
+        self._training_mode = "batch"
 
     @property
     def user_factors(self) -> np.ndarray:
@@ -120,7 +121,7 @@ class ElementwiseAlternatingLeastSquares:
             f"property W for self._training_mode='{self._training_mode}' is not defined"
         )
 
-    def fit(self, user_items: sps.spmatrix, show_loss: bool = False, postprocess: bool = True):
+    def fit(self, user_items: sps.spmatrix, show_loss: bool = False, postprocess: bool = True) -> None:
         """Fit the model to the given rating data from scratch
 
         Parameters
@@ -148,7 +149,7 @@ class ElementwiseAlternatingLeastSquares:
         if postprocess:
             self._convert_data_for_online_training()
 
-    def update_model(self, u, i, show_loss: bool = False):
+    def update_model(self, u: int, i: int, show_loss: bool = False) -> None:
         """Update the model for single, possibly new user-item pair
 
         Parameters
@@ -187,7 +188,7 @@ class ElementwiseAlternatingLeastSquares:
         if show_loss:
             self._print_loss(1, "update_model", timer.elapsed())
 
-    def _init_data(self, user_items: sps.spmatrix):
+    def _init_data(self, user_items: sps.spmatrix) -> None:
         """Initialize parameters and hyperparameters before batch training"""
         # coerce user_items to csr matrix with float32 type
         if not isinstance(user_items, sps.csr_matrix):
@@ -200,11 +201,13 @@ class ElementwiseAlternatingLeastSquares:
         self._user_items = user_items
         self._user_items_csc = self._user_items.tocsc()
         self.user_count, self.item_count = self._user_items.shape
-        p = self._user_items_csc.getnnz(axis=0)  # item frequencies
-        p = (p / p.sum()) ** self.alpha  # item popularities
-        self.Wi = (
-            p / p.sum() * self.w0
-        )  # confidence that item i missed by users is a true negative assessment
+
+        # item frequencies
+        p = self._user_items_csc.getnnz(axis=0)
+        # item popularities
+        p = (p / p.sum()) ** self.alpha
+        # confidence that item i missed by users is a true negative assessment
+        self.Wi = p / p.sum() * self.w0
 
         # weights for squared errors of ratings
         # NOTE: Elements of W are fixed to be 1 as in the original implementation
@@ -239,7 +242,7 @@ class ElementwiseAlternatingLeastSquares:
         )
         return V0
 
-    def _convert_data_for_online_training(self):
+    def _convert_data_for_online_training(self) -> None:
         """convert matrices to lil for online training"""
         if self._training_mode == "online":
             return
@@ -259,7 +262,7 @@ class ElementwiseAlternatingLeastSquares:
 
         self._training_mode = "online"
 
-    def _convert_data_for_batch_training(self):
+    def _convert_data_for_batch_training(self) -> None:
         """convert matrices to csr for batch training"""
         if self._training_mode == "batch":
             return
@@ -280,7 +283,7 @@ class ElementwiseAlternatingLeastSquares:
 
         self._training_mode = "batch"
 
-    def _update_user(self, u):
+    def _update_user(self, u: int) -> sps.spmatrix:
         """Update the user latent vector"""
         self._convert_data_for_online_training()
         old_user_vec = self.U[[u]]
@@ -298,10 +301,10 @@ class ElementwiseAlternatingLeastSquares:
         )
         return old_user_vec
 
-    def _update_SU(self, u, old_user_vec):
+    def _update_SU(self, u: int, old_user_vec: sps.spmatrix) -> None:
         _update_SU(self.SU, old_user_vec, self.U[[u]])
 
-    def _update_user_and_SU_all(self):
+    def _update_user_and_SU_all(self) -> None:
         self._convert_data_for_batch_training()
         _update_user_and_SU_all(
             self._user_items.indptr,
@@ -319,7 +322,7 @@ class ElementwiseAlternatingLeastSquares:
             self.user_count,
         )
 
-    def _update_item(self, i):
+    def _update_item(self, i: int) -> sps.spmatrix:
         """Update the item latent vector"""
         self._convert_data_for_online_training()
         old_item_vec = self.V[[i]]
@@ -337,10 +340,10 @@ class ElementwiseAlternatingLeastSquares:
         )
         return old_item_vec
 
-    def _update_SV(self, i, old_item_vec):
+    def _update_SV(self, i: int, old_item_vec: sps.spmatrix) -> None:
         _update_SV(self.SV, old_item_vec, self.V[[i]], self.Wi[i])
 
-    def _update_item_and_SV_all(self):
+    def _update_item_and_SV_all(self) -> None:
         self._convert_data_for_batch_training()
         _update_item_and_SV_all(
             self._user_items_csc.indptr,
@@ -358,7 +361,7 @@ class ElementwiseAlternatingLeastSquares:
             self.item_count,
         )
 
-    def _expand_data(self, u, i):
+    def _expand_data(self, u: int , i: int) -> None:
         """Expand matrices for a new user-item pair if necessary"""
         extra_count = 100
         if u >= self.user_count:
@@ -388,7 +391,8 @@ class ElementwiseAlternatingLeastSquares:
         self.user_count = new_user_count
         self.item_count = new_item_count
 
-    def calc_loss(self):
+    def calc_loss(self) -> float:
+        loss: float
         if self._training_mode == "batch":
             loss = _calc_loss_csr(
                 self._user_items.indptr,
@@ -423,12 +427,12 @@ class ElementwiseAlternatingLeastSquares:
             )
         return loss
 
-    def _print_loss(self, iter, message, elapsed):
+    def _print_loss(self, iter: int, message: str, elapsed: float) -> None:
         """Print the loss per nonzero element of user_items"""
         loss = self.calc_loss() / self.user_items.nnz
         print(f"iter={iter} {message} loss={loss:.4f} ({elapsed:.4f} sec)")
 
-    def save(self, file: Union[Path, str], compress: Union[bool, int] = True):
+    def save(self, file: Union[Path, str], compress: Union[bool, int] = True) -> None:
         """Save the model in joblib format
 
         Parameters
@@ -454,7 +458,7 @@ def load_model(file: Union[Path, str]) -> ElementwiseAlternatingLeastSquares:
     return deserialize_eals_joblib(file)
 
 
-# Actual implementation of eALS with numba jit
+# Actual implementation of eALS with Numba JIT
 
 
 @njit(
@@ -559,7 +563,9 @@ def _update_item_and_SV_all(
         user_ratings = data[indptr[i] : indptr[i + 1]]
         w_users = w_data[w_indptr[i] : w_indptr[i + 1]]
         _update_item(i, user_inds, user_ratings, U, V, SU, w_users, Wi, factors, regularization)
-    SV[:] = (V.T * Wi) @ V  # in-place assignment
+
+    # in-place assignment
+    SV[:] = (V.T * Wi) @ V
 
 
 @njit(
@@ -573,13 +579,15 @@ def _calc_loss_csr(
         item_indices = indices[indptr[u] : indptr[u + 1]]
         ratings = data[indptr[u] : indptr[u + 1]]
         weights = w_data[w_indptr[u] : w_indptr[u + 1]]
+
         for i, w, rating in zip(item_indices, weights, ratings):
             pred = U[u] @ V[i]
             loss += w * ((rating - pred) ** 2)
-            loss -= Wi[i] * (pred ** 2)  # for non-missing items
-        loss += (
-            SV @ U[u] @ U[u]
-        )  # sum of (Wi[i] * (pred ** 2)) for all (= missing + non-missing) items
+            # for non-missing items
+            loss -= Wi[i] * (pred ** 2)
+
+        # sum of (Wi[i] * (pred ** 2)) for all (= missing + non-missing) items
+        loss += SV @ U[u] @ U[u]
     return loss
 
 
@@ -605,9 +613,9 @@ def _calc_loss_lil_inner_loop(i, indices, ratings, weights, U, V, Wi):
     return l
 
 
-def _calc_loss_lil(cols, data, U, V, SV, w_t_data, Wi, user_count, item_count, regularization, dtype):
-    # TODO: @njit does not improve performance of this function. Better way to implement it?
-    loss = _calc_loss_lil_init(U, V, SV, user_count, regularization)
+# TODO: @njit does not improve performance of this function. Better way to implement it?
+def _calc_loss_lil(cols: np.ndarray, data: np.ndarray, U: sps.spmatrix, V: sps.spmatrix, SV: np.ndarray, w_t_data: np.ndarray, Wi:np.ndarray, user_count: int, item_count: int, regularization: float, dtype: type) -> float:
+    loss: float = _calc_loss_lil_init(U, V, SV, user_count, regularization)
     for i in range(item_count):
         if not cols[i]:
             continue
