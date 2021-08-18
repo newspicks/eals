@@ -9,7 +9,7 @@ A Python implementation of the element-wise alternating least squares (eALS) for
 ## Installation
 
 ```sh
-pip install git+https://github.com/newspicks/implicit-eals.git
+pip install git+https://github.com/newspicks/eals.git
 ```
 
 ## Usage
@@ -40,8 +40,8 @@ See the [examples](examples/) directory for complete examples.
 ### Setup development environment
 
 ```sh
-git clone https://github.com/newspicks/implicit-eals.git
-cd implicit-eals
+git clone https://github.com/newspicks/eals.git
+cd eals
 poetry run pip install -U pip
 poetry install
 ```
