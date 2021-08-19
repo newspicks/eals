@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "eals"
-version = "0.1.0"
+version = "0.9.0"
 description = "eALS"
 authors = ["Akira Kitauchi <kitauchi@gmail.com>", "Michihiro Nakamura <nakamichi@nakamichi.org>"]
 
