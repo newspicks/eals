@@ -1,4 +1,4 @@
-# Element-wise Alternating Least Squares (eALS)
+# eALS - Element-wise Alternating Least Squares
 
 A Python implementation of the element-wise alternating least squares (eALS) for fast online matrix factorization proposed by [arXiv:1708.05024](https://arxiv.org/abs/1708.05024).
 
@@ -9,7 +9,7 @@ A Python implementation of the element-wise alternating least squares (eALS) for
 ## Installation
 
 ```sh
-pip install git+https://github.com/newspicks/eals.git
+pip install eals
 ```
 
 ## Usage
