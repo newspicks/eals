@@ -1,8 +1,11 @@
 [tool.poetry]
 name = "eals"
-version = "0.9.0"
-description = "eALS"
+version = "0.9.1"
+description = "eALS - Element-wise Alternating Least Squares"
 authors = ["Akira Kitauchi <kitauchi@gmail.com>", "Michihiro Nakamura <nakamichi@nakamichi.org>"]
+homepage = "https://github.com/newspicks"
+repository = "https://github.com/newspicks/eals"
+readme = "README.md"
 
 [tool.poetry.dependencies]
 python = ">=3.8,<3.10"
