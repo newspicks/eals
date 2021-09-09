@@ -19,21 +19,25 @@ import numpy as np
 import scipy.sparse as sps
 from eals import ElementwiseAlternatingLeastSquares, load_model
 
-# Batch training
+# batch training
 user_items = sps.csr_matrix([[1, 2, 0, 0], [0, 3, 1, 0], [0, 4, 0, 4]], dtype=np.float32)
 model = ElementwiseAlternatingLeastSquares(factors=2)
 model.fit(user_items)
 
-# Learned latent vectors
+# learned latent vectors
 model.user_factors
 model.item_factors
 
-# Online training for new data (user_id, item_id)
+# online training for new data (user_id, item_id)
 model.update_model(1, 0)
-# Expand matrices for a new user or item
+
+# rating matrix and latent vectors will be expanded for a new user or item
 model.update_model(0, 5)
 
-# Save and load the model
+# current rating matrix
+model.user_items
+
+# save and load the model
 model.save("model.joblib")
 model = load_model("model.joblib")
 ```
