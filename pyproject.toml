@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "eals"
-version = "0.9.2"
+version = "0.9.3"
 description = "eALS - Element-wise Alternating Least Squares"
 authors = ["Akira Kitauchi <kitauchi@gmail.com>", "Michihiro Nakamura <nakamichi@nakamichi.org>"]
 homepage = "https://github.com/newspicks"
