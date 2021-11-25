@@ -30,7 +30,6 @@ def test_init_data():
     model = ElementwiseAlternatingLeastSquares(alpha=alpha, w0=w0)
     model._init_data(user_items)
     assert np.allclose(model.Wi, [w0 / 2, w0 / 2])
-    assert np.allclose(model._W.toarray(), [[0, 1], [1, 0]])
 
 
 @mock.patch.object(ElementwiseAlternatingLeastSquares, "_init_U")
