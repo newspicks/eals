@@ -10,7 +10,7 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = ">=3.8,<3.10"
 scipy = "^1.5.4"
-numba = "^0.53.1"
+numba = ">=0.53.1,<1.0.0"
 joblib = "^1.0.1"
 
 [tool.poetry.dev-dependencies]
