@@ -4,7 +4,7 @@ A Python implementation of the element-wise alternating least squares (eALS) for
 
 ## Prerequisites
 
-- Python >= 3.8
+- Python >= 3.8, < 3.10
 
 ## Installation
 
@@ -68,7 +68,7 @@ USE_NUMBA=0 poetry run pytest
 ```
 
 To run tests against all supported Python versions, use [tox](https://tox.readthedocs.io/).
-You may need to put the Python version numbers in the `.python-version` file.
+You may need to add the Python versions in the `tox.ini` file.
 
 ```sh
 poetry run tox
