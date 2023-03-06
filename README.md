@@ -4,7 +4,7 @@ A Python implementation of the element-wise alternating least squares (eALS) for
 
 ## Prerequisites
 
-- Python >= 3.8, < 3.10
+- Python >= 3.8, < 3.11
 
 ## Installation
 
